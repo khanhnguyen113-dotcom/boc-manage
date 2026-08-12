@@ -1,0 +1,5 @@
+{
+  "capacity_hours_per_day": 8,
+  "near_capacity_threshold_source": 0.8,
+  "note": "near_capacity_threshold trong danh mục là 0.8 nhưng các sheet báo cáo dùng 0.85 — mâu thuẫn đã ghi ở NEED_CONFIRMATION B4. Giá trị áp dụng lấy từ system_settings."
+}

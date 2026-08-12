@@ -1,0 +1,1833 @@
+{
+  "generated_at": "2026-08-12T09:21:55.543Z",
+  "database_id": "boc_control_tower",
+  "tables": [
+    {
+      "id": "profiles",
+      "name": "Hồ sơ người dùng",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "employee_code",
+          "kind": "varchar",
+          "size": 50
+        },
+        {
+          "key": "full_name",
+          "kind": "varchar",
+          "size": 200,
+          "required": true
+        },
+        {
+          "key": "display_alias",
+          "kind": "varchar",
+          "size": 100
+        },
+        {
+          "key": "email",
+          "kind": "email",
+          "required": true
+        },
+        {
+          "key": "primary_unit_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "job_title",
+          "kind": "varchar",
+          "size": 150
+        },
+        {
+          "key": "avatar_color",
+          "kind": "varchar",
+          "size": 30
+        },
+        {
+          "key": "status",
+          "kind": "enum",
+          "values": [
+            "ACTIVE",
+            "INACTIVE",
+            "SUSPENDED"
+          ],
+          "required": true
+        },
+        {
+          "key": "locale",
+          "kind": "varchar",
+          "size": 10,
+          "required": true
+        },
+        {
+          "key": "timezone",
+          "kind": "varchar",
+          "size": 50,
+          "required": true
+        },
+        {
+          "key": "capacity_hours_per_day",
+          "kind": "float"
+        },
+        {
+          "key": "password_hash",
+          "kind": "varchar",
+          "size": 255
+        },
+        {
+          "key": "last_seen_at",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_profiles_user",
+          "type": "unique",
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "key": "idx_profiles_email",
+          "type": "unique",
+          "columns": [
+            "email"
+          ]
+        },
+        {
+          "key": "idx_profiles_unit_status",
+          "type": "key",
+          "columns": [
+            "primary_unit_id",
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "user_roles",
+      "name": "Vai trò người dùng",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "role_code",
+          "kind": "varchar",
+          "size": 40,
+          "required": true
+        },
+        {
+          "key": "unit_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "valid_from",
+          "kind": "datetime"
+        },
+        {
+          "key": "valid_to",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_user_roles_user",
+          "type": "key",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data_scopes",
+      "name": "Phạm vi dữ liệu",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "scope_type",
+          "kind": "enum",
+          "values": [
+            "ALL",
+            "UNIT",
+            "SELF_ASSIGNED",
+            "CUSTOM"
+          ],
+          "required": true
+        },
+        {
+          "key": "unit_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "include_children",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        },
+        {
+          "key": "valid_to",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_data_scopes_user",
+          "type": "key",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "user_capabilities",
+      "name": "Capability theo người dùng",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "capability",
+          "kind": "varchar",
+          "size": 60,
+          "required": true
+        },
+        {
+          "key": "effect",
+          "kind": "enum",
+          "values": [
+            "ALLOW",
+            "DENY"
+          ],
+          "required": true
+        },
+        {
+          "key": "reason",
+          "kind": "text"
+        },
+        {
+          "key": "expires_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "granted_by",
+          "kind": "varchar",
+          "size": 36
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_user_caps",
+          "type": "unique",
+          "columns": [
+            "user_id",
+            "capability"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "organizational_units",
+      "name": "Đơn vị",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "code",
+          "kind": "varchar",
+          "size": 30,
+          "required": true
+        },
+        {
+          "key": "name",
+          "kind": "varchar",
+          "size": 200,
+          "required": true
+        },
+        {
+          "key": "parent_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "unit_type",
+          "kind": "enum",
+          "values": [
+            "COMPANY",
+            "CENTER",
+            "DEPARTMENT",
+            "TEAM"
+          ],
+          "required": true
+        },
+        {
+          "key": "manager_user_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "capacity_hours_per_day",
+          "kind": "float"
+        },
+        {
+          "key": "sort_order",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "is_active",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_units_code",
+          "type": "unique",
+          "columns": [
+            "code"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "management_levels",
+      "name": "Lớp 1 — Cấp quản trị",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "code",
+          "kind": "varchar",
+          "size": 30,
+          "required": true
+        },
+        {
+          "key": "name",
+          "kind": "varchar",
+          "size": 200,
+          "required": true
+        },
+        {
+          "key": "sort_order",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "is_active",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_ml_code",
+          "type": "unique",
+          "columns": [
+            "code"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "work_categories",
+      "name": "Lớp 2 — Nhóm công việc",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "code",
+          "kind": "varchar",
+          "size": 30,
+          "required": true
+        },
+        {
+          "key": "name",
+          "kind": "varchar",
+          "size": 200,
+          "required": true
+        },
+        {
+          "key": "sort_order",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "is_active",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        },
+        {
+          "key": "exclude_from_progress_avg",
+          "kind": "boolean",
+          "required": true,
+          "default": false
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_cat_code",
+          "type": "unique",
+          "columns": [
+            "code"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "work_items",
+      "name": "Công việc L3–L6",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "code",
+          "kind": "varchar",
+          "size": 80,
+          "required": true
+        },
+        {
+          "key": "legacy_code",
+          "kind": "varchar",
+          "size": 80
+        },
+        {
+          "key": "level",
+          "kind": "integer",
+          "required": true,
+          "min": 3,
+          "max": 6
+        },
+        {
+          "key": "parent_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "root_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "path",
+          "kind": "varchar",
+          "size": 500,
+          "required": true
+        },
+        {
+          "key": "depth",
+          "kind": "integer",
+          "required": true,
+          "min": 0,
+          "max": 3
+        },
+        {
+          "key": "year",
+          "kind": "integer",
+          "required": true
+        },
+        {
+          "key": "management_level_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "category_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "title",
+          "kind": "varchar",
+          "size": 500,
+          "required": true
+        },
+        {
+          "key": "description",
+          "kind": "text"
+        },
+        {
+          "key": "expected_output",
+          "kind": "text"
+        },
+        {
+          "key": "value_contribution",
+          "kind": "text"
+        },
+        {
+          "key": "owning_unit_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "lead_user_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "primary_assignee_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "status",
+          "kind": "enum",
+          "values": [
+            "NOT_SCHEDULED",
+            "SCHEDULED",
+            "NOT_STARTED",
+            "IN_PROGRESS",
+            "PAUSED",
+            "COMPLETED",
+            "CANCELLED"
+          ],
+          "required": true
+        },
+        {
+          "key": "priority",
+          "kind": "enum",
+          "values": [
+            "P1",
+            "P2",
+            "P3",
+            "P4"
+          ]
+        },
+        {
+          "key": "schedule_type",
+          "kind": "enum",
+          "values": [
+            "UNSCHEDULED",
+            "DEADLINE",
+            "RECURRING",
+            "AD_HOC"
+          ],
+          "required": true
+        },
+        {
+          "key": "recurrence_rule",
+          "kind": "enum",
+          "values": [
+            "WEEK",
+            "MONTH",
+            "QUARTER",
+            "YEAR"
+          ]
+        },
+        {
+          "key": "review_date",
+          "kind": "datetime"
+        },
+        {
+          "key": "planned_start",
+          "kind": "datetime"
+        },
+        {
+          "key": "planned_end",
+          "kind": "datetime"
+        },
+        {
+          "key": "display_start",
+          "kind": "datetime"
+        },
+        {
+          "key": "display_end",
+          "kind": "datetime"
+        },
+        {
+          "key": "manual_progress",
+          "kind": "float",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "key": "effective_progress",
+          "kind": "float",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "key": "estimated_hours_input",
+          "kind": "float",
+          "min": 0
+        },
+        {
+          "key": "effective_estimated_hours",
+          "kind": "float",
+          "min": 0
+        },
+        {
+          "key": "allocation_unit",
+          "kind": "enum",
+          "values": [
+            "DAY",
+            "WEEK"
+          ]
+        },
+        {
+          "key": "allocation_hours",
+          "kind": "float",
+          "min": 0
+        },
+        {
+          "key": "completed_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "result_link",
+          "kind": "varchar",
+          "size": 2000
+        },
+        {
+          "key": "data_quality_status",
+          "kind": "enum",
+          "values": [
+            "VALID",
+            "INCOMPLETE",
+            "INVALID"
+          ],
+          "required": true
+        },
+        {
+          "key": "data_quality_codes",
+          "kind": "varchar",
+          "size": 60,
+          "array": true
+        },
+        {
+          "key": "is_leaf",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        },
+        {
+          "key": "is_archived",
+          "kind": "boolean",
+          "required": true,
+          "default": false
+        },
+        {
+          "key": "archived_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "cancel_reason",
+          "kind": "text"
+        },
+        {
+          "key": "created_by",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "updated_by",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "version",
+          "kind": "integer",
+          "required": true,
+          "default": 1
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_wi_code",
+          "type": "unique",
+          "columns": [
+            "code"
+          ]
+        },
+        {
+          "key": "idx_wi_parent",
+          "type": "key",
+          "columns": [
+            "parent_id"
+          ]
+        },
+        {
+          "key": "idx_wi_root",
+          "type": "key",
+          "columns": [
+            "root_id"
+          ]
+        },
+        {
+          "key": "idx_wi_year_state",
+          "type": "key",
+          "columns": [
+            "year",
+            "is_archived",
+            "status"
+          ]
+        },
+        {
+          "key": "idx_wi_unit_due",
+          "type": "key",
+          "columns": [
+            "owning_unit_id",
+            "status",
+            "planned_end"
+          ]
+        },
+        {
+          "key": "idx_wi_assignee_due",
+          "type": "key",
+          "columns": [
+            "primary_assignee_id",
+            "status",
+            "planned_end"
+          ]
+        },
+        {
+          "key": "idx_wi_lead",
+          "type": "key",
+          "columns": [
+            "lead_user_id",
+            "status"
+          ]
+        },
+        {
+          "key": "idx_wi_taxonomy",
+          "type": "key",
+          "columns": [
+            "management_level_id",
+            "category_id",
+            "year"
+          ]
+        },
+        {
+          "key": "idx_wi_priority_due",
+          "type": "key",
+          "columns": [
+            "priority",
+            "status",
+            "planned_end"
+          ]
+        },
+        {
+          "key": "idx_wi_schedule",
+          "type": "key",
+          "columns": [
+            "schedule_type",
+            "status"
+          ]
+        },
+        {
+          "key": "idx_wi_quality",
+          "type": "key",
+          "columns": [
+            "data_quality_status",
+            "status"
+          ]
+        },
+        {
+          "key": "idx_wi_title_ft",
+          "type": "fulltext",
+          "columns": [
+            "title"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "work_assignments",
+      "name": "Phân công",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "work_item_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "assignment_role",
+          "kind": "enum",
+          "values": [
+            "LEAD",
+            "OWNER",
+            "ASSIGNEE",
+            "COLLABORATOR",
+            "VIEWER"
+          ],
+          "required": true
+        },
+        {
+          "key": "unit_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "allocation_percent",
+          "kind": "float",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "key": "started_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "ended_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "assigned_by",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "is_active",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_wa_item",
+          "type": "key",
+          "columns": [
+            "work_item_id",
+            "is_active"
+          ]
+        },
+        {
+          "key": "idx_wa_user",
+          "type": "key",
+          "columns": [
+            "user_id",
+            "is_active"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "work_dependencies",
+      "name": "Phụ thuộc công việc",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "predecessor_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "successor_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "dependency_type",
+          "kind": "enum",
+          "values": [
+            "FS",
+            "SS",
+            "FF",
+            "SF"
+          ],
+          "required": true
+        },
+        {
+          "key": "lag_days",
+          "kind": "integer",
+          "default": 0
+        },
+        {
+          "key": "is_active",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_dep_pair",
+          "type": "unique",
+          "columns": [
+            "predecessor_id",
+            "successor_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "execution_logs",
+      "name": "Nhật ký thực hiện",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "record_code",
+          "kind": "varchar",
+          "size": 80,
+          "required": true
+        },
+        {
+          "key": "work_item_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "period_start",
+          "kind": "datetime",
+          "required": true
+        },
+        {
+          "key": "period_end",
+          "kind": "datetime"
+        },
+        {
+          "key": "occurrence_due_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "status",
+          "kind": "enum",
+          "values": [
+            "NOT_DONE",
+            "IN_PROGRESS",
+            "COMPLETED",
+            "SKIPPED"
+          ],
+          "required": true
+        },
+        {
+          "key": "progress",
+          "kind": "float",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "key": "actual_hours",
+          "kind": "float",
+          "min": 0
+        },
+        {
+          "key": "deadline_result",
+          "kind": "enum",
+          "values": [
+            "ON_TIME",
+            "LATE",
+            "NO_DEADLINE"
+          ]
+        },
+        {
+          "key": "note",
+          "kind": "text"
+        },
+        {
+          "key": "skip_reason",
+          "kind": "text"
+        },
+        {
+          "key": "result_link",
+          "kind": "varchar",
+          "size": 2000
+        },
+        {
+          "key": "responsible_user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "completed_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "created_by",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "updated_by",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "version",
+          "kind": "integer",
+          "required": true,
+          "default": 1
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_el_code",
+          "type": "unique",
+          "columns": [
+            "record_code"
+          ]
+        },
+        {
+          "key": "idx_el_item_period",
+          "type": "key",
+          "columns": [
+            "work_item_id",
+            "period_start"
+          ]
+        },
+        {
+          "key": "idx_el_owner",
+          "type": "key",
+          "columns": [
+            "responsible_user_id",
+            "period_start",
+            "status"
+          ]
+        },
+        {
+          "key": "idx_el_due",
+          "type": "key",
+          "columns": [
+            "status",
+            "occurrence_due_at"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "comments",
+      "name": "Bình luận",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "entity_type",
+          "kind": "varchar",
+          "size": 40,
+          "required": true
+        },
+        {
+          "key": "entity_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "parent_comment_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "body",
+          "kind": "text",
+          "required": true
+        },
+        {
+          "key": "author_user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "mentioned_user_ids",
+          "kind": "varchar",
+          "size": 36,
+          "array": true
+        },
+        {
+          "key": "edited_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "is_hidden",
+          "kind": "boolean",
+          "required": true,
+          "default": false
+        },
+        {
+          "key": "hidden_by",
+          "kind": "varchar",
+          "size": 36
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_cm_entity",
+          "type": "key",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attachments",
+      "name": "Tệp đính kèm",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "storage_file_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "bucket_id",
+          "kind": "varchar",
+          "size": 60
+        },
+        {
+          "key": "entity_type",
+          "kind": "varchar",
+          "size": 40,
+          "required": true
+        },
+        {
+          "key": "entity_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "category",
+          "kind": "enum",
+          "values": [
+            "INPUT",
+            "WORKING",
+            "RESULT",
+            "COMMENT"
+          ],
+          "required": true
+        },
+        {
+          "key": "original_name",
+          "kind": "varchar",
+          "size": 255,
+          "required": true
+        },
+        {
+          "key": "mime_type",
+          "kind": "varchar",
+          "size": 120,
+          "required": true
+        },
+        {
+          "key": "size_bytes",
+          "kind": "integer",
+          "required": true,
+          "min": 0
+        },
+        {
+          "key": "external_url",
+          "kind": "varchar",
+          "size": 2000
+        },
+        {
+          "key": "version_no",
+          "kind": "integer",
+          "required": true,
+          "default": 1
+        },
+        {
+          "key": "is_current",
+          "kind": "boolean",
+          "required": true,
+          "default": true
+        },
+        {
+          "key": "uploaded_by",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "archived_at",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_at_entity",
+          "type": "key",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "notifications",
+      "name": "Thông báo",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "recipient_user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "type",
+          "kind": "varchar",
+          "size": 60,
+          "required": true
+        },
+        {
+          "key": "title",
+          "kind": "varchar",
+          "size": 300,
+          "required": true
+        },
+        {
+          "key": "body",
+          "kind": "text",
+          "required": true
+        },
+        {
+          "key": "entity_type",
+          "kind": "varchar",
+          "size": 40,
+          "required": true
+        },
+        {
+          "key": "entity_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "dedupe_key",
+          "kind": "varchar",
+          "size": 255,
+          "required": true
+        },
+        {
+          "key": "priority",
+          "kind": "enum",
+          "values": [
+            "HIGH",
+            "NORMAL",
+            "LOW"
+          ],
+          "required": true
+        },
+        {
+          "key": "read_at",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_nt_recipient",
+          "type": "key",
+          "columns": [
+            "recipient_user_id",
+            "read_at"
+          ]
+        },
+        {
+          "key": "idx_nt_dedupe",
+          "type": "unique",
+          "columns": [
+            "dedupe_key"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "holidays",
+      "name": "Ngày nghỉ",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "holiday_date",
+          "kind": "datetime",
+          "required": true
+        },
+        {
+          "key": "name",
+          "kind": "varchar",
+          "size": 200,
+          "required": true
+        },
+        {
+          "key": "year",
+          "kind": "integer",
+          "required": true
+        },
+        {
+          "key": "source_note",
+          "kind": "varchar",
+          "size": 300
+        },
+        {
+          "key": "is_confirmed",
+          "kind": "boolean",
+          "required": true,
+          "default": false
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_hd_date",
+          "type": "unique",
+          "columns": [
+            "holiday_date"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "capacity_settings",
+      "name": "Công suất",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "scope_type",
+          "kind": "enum",
+          "values": [
+            "SYSTEM",
+            "UNIT",
+            "USER"
+          ],
+          "required": true
+        },
+        {
+          "key": "scope_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "hours_per_day",
+          "kind": "float",
+          "required": true,
+          "min": 0
+        },
+        {
+          "key": "effective_from",
+          "kind": "datetime",
+          "required": true
+        },
+        {
+          "key": "effective_to",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_cap_scope",
+          "type": "key",
+          "columns": [
+            "scope_type",
+            "scope_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "system_settings",
+      "name": "Cấu hình hệ thống",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "key",
+          "kind": "varchar",
+          "size": 100,
+          "required": true
+        },
+        {
+          "key": "value_json",
+          "kind": "text",
+          "required": true
+        },
+        {
+          "key": "value_type",
+          "kind": "enum",
+          "values": [
+            "string",
+            "number",
+            "boolean",
+            "json"
+          ],
+          "required": true
+        },
+        {
+          "key": "description",
+          "kind": "varchar",
+          "size": 500,
+          "required": true
+        },
+        {
+          "key": "updated_by",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "version",
+          "kind": "integer",
+          "required": true,
+          "default": 1
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_ss_key",
+          "type": "unique",
+          "columns": [
+            "key"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audit_logs",
+      "name": "Audit log",
+      "append_only": true,
+      "columns": [
+        {
+          "key": "event_id",
+          "kind": "varchar",
+          "size": 60,
+          "required": true
+        },
+        {
+          "key": "actor_user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "action",
+          "kind": "varchar",
+          "size": 80,
+          "required": true
+        },
+        {
+          "key": "entity_type",
+          "kind": "varchar",
+          "size": 40,
+          "required": true
+        },
+        {
+          "key": "entity_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "request_id",
+          "kind": "varchar",
+          "size": 60
+        },
+        {
+          "key": "before_json",
+          "kind": "text"
+        },
+        {
+          "key": "after_json",
+          "kind": "text"
+        },
+        {
+          "key": "changed_fields",
+          "kind": "varchar",
+          "size": 80,
+          "array": true
+        },
+        {
+          "key": "reason",
+          "kind": "text"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_al_entity",
+          "type": "key",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ]
+        },
+        {
+          "key": "idx_al_actor",
+          "type": "key",
+          "columns": [
+            "actor_user_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "activity_events",
+      "name": "Dòng hoạt động",
+      "append_only": true,
+      "columns": [
+        {
+          "key": "entity_type",
+          "kind": "varchar",
+          "size": 40,
+          "required": true
+        },
+        {
+          "key": "entity_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "actor_user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "verb",
+          "kind": "varchar",
+          "size": 60,
+          "required": true
+        },
+        {
+          "key": "summary",
+          "kind": "varchar",
+          "size": 500,
+          "required": true
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_ae_entity",
+          "type": "key",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outbox_events",
+      "name": "Outbox",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "event_type",
+          "kind": "varchar",
+          "size": 80,
+          "required": true
+        },
+        {
+          "key": "payload_json",
+          "kind": "text",
+          "required": true
+        },
+        {
+          "key": "status",
+          "kind": "enum",
+          "values": [
+            "PENDING",
+            "PROCESSING",
+            "DONE",
+            "FAILED"
+          ],
+          "required": true
+        },
+        {
+          "key": "attempt_count",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "next_attempt_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "processed_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "last_error",
+          "kind": "text"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_ob_status",
+          "type": "key",
+          "columns": [
+            "status",
+            "next_attempt_at"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "import_jobs",
+      "name": "Phiên import",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "source_name",
+          "kind": "varchar",
+          "size": 255,
+          "required": true
+        },
+        {
+          "key": "source_checksum",
+          "kind": "varchar",
+          "size": 80
+        },
+        {
+          "key": "mode",
+          "kind": "enum",
+          "values": [
+            "DRY_RUN",
+            "PRODUCTION"
+          ],
+          "required": true
+        },
+        {
+          "key": "status",
+          "kind": "enum",
+          "values": [
+            "RUNNING",
+            "SUCCEEDED",
+            "FAILED"
+          ],
+          "required": true
+        },
+        {
+          "key": "total_rows",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "imported_rows",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "error_rows",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "mapping_version",
+          "kind": "varchar",
+          "size": 40,
+          "required": true
+        },
+        {
+          "key": "actor_user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "started_at",
+          "kind": "datetime",
+          "required": true
+        },
+        {
+          "key": "finished_at",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_ij_status",
+          "type": "key",
+          "columns": [
+            "status"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "import_errors",
+      "name": "Lỗi import",
+      "append_only": true,
+      "columns": [
+        {
+          "key": "job_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "source_sheet",
+          "kind": "varchar",
+          "size": 100,
+          "required": true
+        },
+        {
+          "key": "source_row",
+          "kind": "integer",
+          "required": true
+        },
+        {
+          "key": "field",
+          "kind": "varchar",
+          "size": 100
+        },
+        {
+          "key": "error_code",
+          "kind": "varchar",
+          "size": 60,
+          "required": true
+        },
+        {
+          "key": "message",
+          "kind": "varchar",
+          "size": 500,
+          "required": true
+        },
+        {
+          "key": "raw_value",
+          "kind": "varchar",
+          "size": 500
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_ie_job",
+          "type": "key",
+          "columns": [
+            "job_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "export_jobs",
+      "name": "Phiên export",
+      "append_only": false,
+      "columns": [
+        {
+          "key": "report_type",
+          "kind": "varchar",
+          "size": 60,
+          "required": true
+        },
+        {
+          "key": "filters_json",
+          "kind": "text",
+          "required": true
+        },
+        {
+          "key": "format",
+          "kind": "enum",
+          "values": [
+            "XLSX",
+            "CSV",
+            "PDF"
+          ],
+          "required": true
+        },
+        {
+          "key": "status",
+          "kind": "enum",
+          "values": [
+            "RUNNING",
+            "SUCCEEDED",
+            "FAILED"
+          ],
+          "required": true
+        },
+        {
+          "key": "storage_file_id",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "record_count",
+          "kind": "integer",
+          "required": true,
+          "default": 0
+        },
+        {
+          "key": "checksum",
+          "kind": "varchar",
+          "size": 80
+        },
+        {
+          "key": "actor_user_id",
+          "kind": "varchar",
+          "size": 36,
+          "required": true
+        },
+        {
+          "key": "expires_at",
+          "kind": "datetime"
+        }
+      ],
+      "indexes": [
+        {
+          "key": "idx_ej_actor",
+          "type": "key",
+          "columns": [
+            "actor_user_id"
+          ]
+        }
+      ]
+    }
+  ],
+  "buckets": [
+    {
+      "id": "boc_attachments",
+      "name": "Tệp nghiệp vụ",
+      "maxFileSizeMb": 25
+    },
+    {
+      "id": "boc_imports",
+      "name": "File import",
+      "maxFileSizeMb": 25
+    },
+    {
+      "id": "boc_exports",
+      "name": "File export",
+      "maxFileSizeMb": 25
+    }
+  ]
+}

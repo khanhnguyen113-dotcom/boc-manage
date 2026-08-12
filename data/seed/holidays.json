@@ -1,0 +1,79 @@
+[
+  {
+    "holiday_date": "2026-01-01",
+    "name": "Tết Dương lịch",
+    "year": 2026,
+    "source_note": "Theo lịch nghỉ áp dụng tại công ty",
+    "is_confirmed": true
+  },
+  {
+    "holiday_date": "2026-02-16",
+    "name": "Tết Nguyên đán – tham chiếu",
+    "year": 2026,
+    "source_note": "BOC/HR xác nhận",
+    "is_confirmed": false
+  },
+  {
+    "holiday_date": "2026-02-17",
+    "name": "Tết Nguyên đán – tham chiếu",
+    "year": 2026,
+    "source_note": "BOC/HR xác nhận",
+    "is_confirmed": false
+  },
+  {
+    "holiday_date": "2026-02-18",
+    "name": "Tết Nguyên đán – tham chiếu",
+    "year": 2026,
+    "source_note": "BOC/HR xác nhận",
+    "is_confirmed": false
+  },
+  {
+    "holiday_date": "2026-02-19",
+    "name": "Tết Nguyên đán – tham chiếu",
+    "year": 2026,
+    "source_note": "BOC/HR xác nhận",
+    "is_confirmed": false
+  },
+  {
+    "holiday_date": "2026-02-20",
+    "name": "Tết Nguyên đán – tham chiếu",
+    "year": 2026,
+    "source_note": "BOC/HR xác nhận",
+    "is_confirmed": false
+  },
+  {
+    "holiday_date": "2026-04-27",
+    "name": "Giỗ Tổ Hùng Vương – nghỉ bù tham chiếu",
+    "year": 2026,
+    "source_note": "BOC/HR xác nhận",
+    "is_confirmed": false
+  },
+  {
+    "holiday_date": "2026-04-30",
+    "name": "Ngày Giải phóng miền Nam",
+    "year": 2026,
+    "source_note": "Theo lịch nghỉ áp dụng tại công ty",
+    "is_confirmed": true
+  },
+  {
+    "holiday_date": "2026-05-01",
+    "name": "Ngày Quốc tế Lao động",
+    "year": 2026,
+    "source_note": "Theo lịch nghỉ áp dụng tại công ty",
+    "is_confirmed": true
+  },
+  {
+    "holiday_date": "2026-09-01",
+    "name": "Quốc khánh – ngày nghỉ tham chiếu",
+    "year": 2026,
+    "source_note": "BOC/HR xác nhận",
+    "is_confirmed": false
+  },
+  {
+    "holiday_date": "2026-09-02",
+    "name": "Quốc khánh",
+    "year": 2026,
+    "source_note": "Theo lịch nghỉ áp dụng tại công ty",
+    "is_confirmed": true
+  }
+]

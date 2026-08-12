@@ -1,0 +1,87 @@
+# =============================================================================
+# Tham chiếu cho Dokploy / chạy thử image production tại chỗ.
+#
+# KHÔNG dùng file này để dựng Appwrite: Appwrite có nhiều container và volume có state,
+# phải dùng compose/template chính thức của Appwrite rồi trỏ biến môi trường sang (guideline 18.3).
+# =============================================================================
+
+services:
+  boc-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Khuyến nghị đặt bằng Git SHA/release id trong Dokploy; không phải secret.
+        NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:-}
+    image: boc-control-tower:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+
+    # Dokploy/Traefik truy cập qua mạng Docker nội bộ; không publish cổng ra VPS.
+    expose:
+      - '3000'
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Ho_Chi_Minh
+      APP_NAME: BOC Control Tower
+      APP_URL: ${APP_URL:?Bắt buộc đặt URL HTTPS công khai của ứng dụng}
+      APP_TIMEZONE: Asia/Ho_Chi_Minh
+      APP_LOCALE: vi-VN
+
+      # ADR-003: production bắt buộc dùng Appwrite; app từ chối khởi động nếu để `local`.
+      DATA_DRIVER: appwrite
+
+      SESSION_COOKIE_NAME: hh_boc_session
+      SESSION_SECRET: ${SESSION_SECRET:?Bắt buộc đặt SESSION_SECRET}
+      SESSION_MAX_AGE_SECONDS: 28800
+
+      APPWRITE_ENDPOINT: ${APPWRITE_ENDPOINT:?Bắt buộc}
+      APPWRITE_PROJECT_ID: ${APPWRITE_PROJECT_ID:?Bắt buộc}
+      APPWRITE_DATABASE_ID: ${APPWRITE_DATABASE_ID:-boc_control_tower}
+      APPWRITE_SERVER_API_KEY: ${APPWRITE_SERVER_API_KEY:?Bắt buộc}
+      APPWRITE_BUCKET_ATTACHMENTS: ${APPWRITE_BUCKET_ATTACHMENTS:-boc_attachments}
+      APPWRITE_BUCKET_IMPORTS: ${APPWRITE_BUCKET_IMPORTS:-boc_imports}
+      APPWRITE_BUCKET_EXPORTS: ${APPWRITE_BUCKET_EXPORTS:-boc_exports}
+      APPWRITE_RESOLVE_HOST: ${APPWRITE_RESOLVE_HOST:-}
+      APPWRITE_RESOLVE_IP: ${APPWRITE_RESOLVE_IP:-}
+
+      # Tham số nghiệp vụ — `system_settings` trong database sẽ ghi đè các giá trị này.
+      WORK_WEEK_MASK: ${WORK_WEEK_MASK:-MON_SAT}
+      CAPACITY_DAYS_PER_WEEK: ${CAPACITY_DAYS_PER_WEEK:-5}
+      DEFAULT_CAPACITY_HOURS_PER_DAY: ${DEFAULT_CAPACITY_HOURS_PER_DAY:-8}
+      NEAR_CAPACITY_THRESHOLD: ${NEAR_CAPACITY_THRESHOLD:-0.85}
+      DEADLINE_WARNING_BUSINESS_DAYS: ${DEADLINE_WARNING_BUSINESS_DAYS:-7}
+      PROGRESS_ROLLUP_MODE: ${PROGRESS_ROLLUP_MODE:-average}
+      EXECUTION_LOG_EDIT_WINDOW_HOURS: ${EXECUTION_LOG_EDIT_WINDOW_HOURS:-72}
+
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DEBUG_SQL: ${DEBUG_SQL:-false}
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+    # Guideline 18.2: chạy non-root, filesystem chỉ đọc; chỉ /tmp và cache Next.js được ghi.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+      - /app/.next/cache:rw,nosuid,size=256m,uid=1001,gid=1001,mode=0700
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'

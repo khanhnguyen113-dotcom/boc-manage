@@ -1,26 +1,295 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* ===========================================================================
+   BOC Control Tower — hệ thống thị giác
+   Guideline 13: “executive control tower meets focused workspace”.
+
+   MỌI màu đi qua biến ở đây (ADR-013). Component không được viết mã hex.
+   Đổi bộ nhận diện = sửa đúng khối `:root` này.
+   =========================================================================== */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* --- Thương hiệu ---------------------------------------------------------
+     NEED_CONFIRMATION E1: đây là màu đỏ PLACEHOLDER, chưa phải mã brand chính
+     thức của Hồng Hà. Thay toàn bộ thang --brand-* khi có brand guideline. */
+  --brand-50: #fff1f2;
+  --brand-100: #ffe0e2;
+  --brand-200: #ffc6ca;
+  --brand-300: #ff9ea5;
+  --brand-400: #fb6772;
+  --brand-500: #ef3644;
+  --brand-600: #c8102e;
+  --brand-700: #a80c26;
+  --brand-800: #8b0f24;
+  --brand-900: #741123;
+  --brand-950: #40040e;
+
+  /* --- Nền & chữ ----------------------------------------------------------- */
+  --canvas: #f6f7f9;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f1f3f6;
+  --surface-hover: #f6f7f9;
+  --border: #e3e6eb;
+  --border-strong: #cdd2da;
+
+  --text: #101319;
+  --text-muted: #5b6472;
+  --text-subtle: #808a99;
+  --text-inverse: #ffffff;
+
+  /* --- Màu ngữ nghĩa -------------------------------------------------------
+     Dùng cho trạng thái/ưu tiên/cảnh báo. Mỗi tone có nền nhạt + viền + chữ
+     đậm để badge luôn đạt tương phản AA mà không cần đổ nền đậm. */
+  --tone-neutral-bg: #eef0f4;
+  --tone-neutral-border: #d6dae1;
+  --tone-neutral-text: #384150;
+
+  --tone-info-bg: #e8f1fe;
+  --tone-info-border: #bcd7fb;
+  --tone-info-text: #14528f;
+
+  --tone-progress-bg: #e6f4f7;
+  --tone-progress-border: #b3e0e8;
+  --tone-progress-text: #0a5d70;
+
+  --tone-success-bg: #e6f6ec;
+  --tone-success-border: #b4e4c6;
+  --tone-success-text: #12683c;
+
+  --tone-warning-bg: #fef3e2;
+  --tone-warning-border: #f7d9a8;
+  --tone-warning-text: #8a5308;
+
+  --tone-danger-bg: #fdeaec;
+  --tone-danger-border: #f7c2c8;
+  --tone-danger-text: #a3132a;
+
+  --tone-strategic-bg: #f0ecfd;
+  --tone-strategic-border: #d5c9f8;
+  --tone-strategic-text: #513095;
+
+  --tone-muted-bg: #f2f3f5;
+  --tone-muted-border: #dfe2e7;
+  --tone-muted-text: #666f7d;
+
+  --focus-ring: color-mix(in oklab, var(--brand-600) 55%, white);
+
+  --shadow-sm: 0 1px 2px rgb(16 19 25 / 0.05);
+  --shadow-md: 0 2px 4px -1px rgb(16 19 25 / 0.06), 0 4px 12px -2px rgb(16 19 25 / 0.08);
+  --shadow-lg: 0 8px 24px -6px rgb(16 19 25 / 0.14);
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Chế độ tối: chỉ đảo lớp nền/chữ, giữ nguyên ngữ nghĩa màu trạng thái. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme='light']) {
+    --canvas: #0c0e13;
+    --surface: #14171e;
+    --surface-raised: #191d26;
+    --surface-sunken: #101319;
+    --surface-hover: #1d222c;
+    --border: #262c38;
+    --border-strong: #38404f;
+
+    --text: #eef1f6;
+    --text-muted: #a4adbb;
+    --text-subtle: #78818f;
+
+    --tone-neutral-bg: #1e2430;
+    --tone-neutral-border: #2f3849;
+    --tone-neutral-text: #c3cbd8;
+
+    --tone-info-bg: #12233a;
+    --tone-info-border: #1e3c63;
+    --tone-info-text: #8dbcf5;
+
+    --tone-progress-bg: #0f2a31;
+    --tone-progress-border: #17454f;
+    --tone-progress-text: #7fd0de;
+
+    --tone-success-bg: #0f2a1c;
+    --tone-success-border: #1b4a30;
+    --tone-success-text: #7ed6a3;
+
+    --tone-warning-bg: #302213;
+    --tone-warning-border: #573c1c;
+    --tone-warning-text: #f0bd6b;
+
+    --tone-danger-bg: #331419;
+    --tone-danger-border: #5c222c;
+    --tone-danger-text: #f4a3ae;
+
+    --tone-strategic-bg: #221a3c;
+    --tone-strategic-border: #3a2c66;
+    --tone-strategic-text: #bda8f7;
+
+    --tone-muted-bg: #1a1e26;
+    --tone-muted-border: #2b3240;
+    --tone-muted-text: #99a2b0;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.45), 0 4px 12px -2px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 8px 24px -6px rgb(0 0 0 / 0.6);
   }
 }
 
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  --radius-card: var(--radius-lg);
+  --font-sans:
+    var(--font-be-vietnam), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light dark;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+/* Con số trong bảng/KPI phải thẳng cột — bật chữ số đều bề rộng. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Focus nhìn thấy rõ trên mọi nền (guideline 13.6, WCAG 2.2 AA). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-600);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Bỏ qua nội dung điều hướng bằng bàn phím. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--brand-600);
+  color: white;
+  padding: 0.625rem 1rem;
+  border-radius: 0 0 var(--radius) 0;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+::selection {
+  background: var(--brand-100);
+  color: var(--brand-900);
+}
+
+/* Thanh cuộn mảnh, không chiếm chỗ thị giác trong bảng dày dữ liệu. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+@keyframes boc-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-in {
+  animation: boc-fade-in 200ms ease-out both;
+}
+
+@keyframes boc-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--surface) 70%, transparent),
+    transparent
+  );
+  animation: boc-shimmer 1.4s infinite;
+}
+
+/* Guideline 13.4: tôn trọng prefers-reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
 }

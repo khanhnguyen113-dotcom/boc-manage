@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+.data
+.env
+.env.*
+!.env.example
+*.md
+!README.md
+coverage
+data/source
+.claude
+.vscode
+appwrite-schema-manifest.json

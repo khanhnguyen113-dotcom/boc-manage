@@ -1,0 +1,226 @@
+{
+  "generated_at": "2026-08-12T03:17:16.033Z",
+  "source_file": "data/source/BOC_Form_QTCV_5LOP_Final.xlsx",
+  "source_sha256": "d3329d2d219229ad2882d8359095bb917777eee669b18926afb61346938c8749",
+  "source_range": "Trung tâm nhập liệu!B67:Z212",
+  "totals": {
+    "rows_found": 122,
+    "rows_accepted": 118,
+    "rows_rejected": 4,
+    "by_level": {
+      "L3": 38,
+      "L4": 38,
+      "L5": 42,
+      "L6": 0
+    }
+  },
+  "issues": [
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 206,
+      "code": "HHL5RD05-01.01",
+      "field": "Mã cha",
+      "error_code": "ORPHAN_REFERENCE",
+      "message": "Không tìm thấy công việc cha “HHL5RD05-01” trong bảng master.",
+      "raw_value": "HHL5RD05-01"
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 207,
+      "code": "HHL5RD05-01.02",
+      "field": "Mã cha",
+      "error_code": "ORPHAN_REFERENCE",
+      "message": "Không tìm thấy công việc cha “HHL5RD05-01” trong bảng master.",
+      "raw_value": "HHL5RD05-01"
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 208,
+      "code": "HHL5RD05-01.03",
+      "field": "Mã cha",
+      "error_code": "ORPHAN_REFERENCE",
+      "message": "Không tìm thấy công việc cha “HHL5RD05-01” trong bảng master.",
+      "raw_value": "HHL5RD05-01"
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 209,
+      "code": "HHL5RD05-01.04",
+      "field": "Mã cha",
+      "error_code": "ORPHAN_REFERENCE",
+      "message": "Không tìm thấy công việc cha “HHL5RD05-01” trong bảng master.",
+      "raw_value": "HHL5RD05-01"
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 90,
+      "code": "HHL3DL12",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 91,
+      "code": "HHL3XK01",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 92,
+      "code": "HHL3XK02",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 93,
+      "code": "HHL3XK03",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 94,
+      "code": "HHL3XK04",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 95,
+      "code": "HHL3XK05",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 96,
+      "code": "HHL3MKT01",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 97,
+      "code": "HHL3MKT02",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 98,
+      "code": "HHL3MKT03",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 99,
+      "code": "HHL3MKT04",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 100,
+      "code": "HHL3KH&CƯ01",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 101,
+      "code": "HHL3KH&CƯ02",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 102,
+      "code": "HHL3KH&CƯ03",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 103,
+      "code": "HHL3KH&CƯ04",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 104,
+      "code": "HHL3KH&CƯ05",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 145,
+      "code": "HHL4DL16",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 146,
+      "code": "HHL4DL17",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 194,
+      "code": "HHL5DL07-06",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    },
+    {
+      "source_sheet": "Trung tâm nhập liệu",
+      "source_row": 195,
+      "code": "HHL5DL07-07",
+      "field": "Lớp 1 / Lớp 2",
+      "error_code": "MISSING_TAXONOMY",
+      "message": "Không xác định được Lớp 1 (cấp quản trị) hoặc Lớp 2 (nhóm công việc) từ tab “Lớp 3”.",
+      "raw_value": null
+    }
+  ]
+}
