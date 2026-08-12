@@ -150,6 +150,8 @@ APPWRITE_RESOLVE_IP=103.142.27.229
 
 Quy trình cấu hình repository, environment, domain, HTTPS và rollback trên Dokploy: [docs/DOKPLOY.md](docs/DOKPLOY.md).
 
+Phương án **Dokploy Application + Nixpacks**: [docs/DOKPLOY_NIXPACKS.md](docs/DOKPLOY_NIXPACKS.md).
+
 ```bash
 docker build -t boc-control-tower:1.0.0 .
 ```

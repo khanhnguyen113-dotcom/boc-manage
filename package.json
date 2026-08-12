@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:nixpacks": "npm run build && node scripts/prepare-standalone.mjs",
     "start": "next start",
+    "start:nixpacks": "node .next/standalone/server.js",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
