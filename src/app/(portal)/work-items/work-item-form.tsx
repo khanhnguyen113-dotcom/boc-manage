@@ -56,6 +56,9 @@ export function WorkItemForm(props: WorkItemFormProps) {
 
   const parentLevel = level === 3 ? null : ((level - 1) as WorkLevel);
   const parentOptions = props.parents.filter((p) => p.level === parentLevel);
+  const availableLevels = [...new Set([3, ...props.parents.map((parent) => parent.level + 1), item?.level])]
+    .filter((value): value is number => typeof value === 'number')
+    .sort((a, b) => a - b);
   const err = (field: string) => state.fieldErrors?.[field] ?? null;
 
   return (
@@ -86,10 +89,11 @@ export function WorkItemForm(props: WorkItemFormProps) {
                 setParentId('');
               }}
             >
-              <option value={3}>Lớp 3 · Công việc chính</option>
-              <option value={4}>Lớp 4 · Danh mục</option>
-              <option value={5}>Lớp 5 · Nhiệm vụ</option>
-              <option value={6}>Lớp 6 · Tác nghiệp</option>
+              {availableLevels.map((value) => (
+                <option key={value} value={value}>
+                  {workLevelOptionLabel(value)}
+                </option>
+              ))}
             </Select>
           </Field>
 
@@ -449,4 +453,11 @@ export function WorkItemForm(props: WorkItemFormProps) {
       </div>
     </form>
   );
+}
+
+function workLevelOptionLabel(level: number): string {
+  if (level === 3) return 'Lớp 3 · Công việc chính';
+  if (level === 4) return 'Lớp 4 · Danh mục';
+  if (level === 5) return 'Lớp 5 · Nhiệm vụ';
+  return `Lớp ${level} · Chi tiết phân rã`;
 }

@@ -98,12 +98,12 @@ export function DataQualityBadge({
   );
 }
 
-const LEVEL_TONE: Record<WorkLevel, string> = {
-  3: TONE_CLASS.strategic,
-  4: TONE_CLASS.info,
-  5: TONE_CLASS.progress,
-  6: TONE_CLASS.neutral,
-};
+function levelTone(level: WorkLevel): string {
+  if (level === 3) return TONE_CLASS.strategic;
+  if (level === 4) return TONE_CLASS.info;
+  if (level === 5) return TONE_CLASS.progress;
+  return TONE_CLASS.neutral;
+}
 
 export function LevelBadge({ level }: { level: WorkLevel }) {
   return (
@@ -111,7 +111,7 @@ export function LevelBadge({ level }: { level: WorkLevel }) {
       title={`Lớp ${level}`}
       className={cn(
         'inline-flex h-5 min-w-8 items-center justify-center rounded border px-1 text-[11px] font-semibold tabular',
-        LEVEL_TONE[level],
+        levelTone(level),
       )}
     >
       L{level}

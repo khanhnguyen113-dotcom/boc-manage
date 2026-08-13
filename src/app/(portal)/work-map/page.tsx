@@ -17,7 +17,7 @@ import { getBocContext } from '@/server/services/context';
 export const metadata: Metadata = { title: 'Bản đồ công việc' };
 
 /**
- * Cây L3–L6 — guideline 5.3 “Tree”.
+ * Cây từ L3 trở xuống — guideline 5.3 “Tree”.
  *
  * Dùng `<details>` gốc của HTML: mở/đóng chạy được cả khi JS chưa tải, có sẵn ngữ nghĩa cho
  * screen reader và tự lưu trạng thái khi in. Nhánh L3 mặc định mở, các nhánh sâu hơn thu gọn để
@@ -40,17 +40,19 @@ export default async function WorkMapPage({
   const tree = buildTreeIndex(items);
   const roots = tree.roots.filter((r) => r.level === 3);
   const orphans = tree.roots.filter((r) => r.level !== 3);
+  const canCreateWork =
+    user.capabilities.has('work.create_l3') || user.capabilities.has('work.create_child');
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Bản đồ công việc"
-        description="Phân rã L3 → L4 → L5 → L6. Tiến độ và ngày hiển thị ở công việc cha đều được tính tự động từ các công việc con."
+        description="Mặc định tập trung L3 → L4 → L5; có thể mở rộng sâu hơn khi cần. Tiến độ và ngày hiển thị ở công việc cha được tính tự động từ các công việc con."
       />
 
       {orphans.length > 0 ? (
         <Alert tone="danger" title={`${orphans.length} công việc mất liên kết cha`}>
-          Các bản ghi dưới đây có cấp L4–L6 nhưng không tìm thấy công việc cha trong phạm vi dữ
+          Các bản ghi dưới đây có cấp từ L4 trở đi nhưng không tìm thấy công việc cha trong phạm vi dữ
           liệu. Đây là lỗi cấu trúc cần xử lý trước khi tin vào số liệu tổng hợp:{' '}
           {orphans.map((o) => o.code).join(', ')}
         </Alert>
@@ -73,7 +75,14 @@ export default async function WorkMapPage({
           <ul className="divide-y divide-[var(--border)]">
             {roots.map((root) => (
               <li key={root.id}>
-                <TreeNode node={root} tree={tree} ctx={ctx} depth={0} defaultOpen={roots.length <= 6} />
+                <TreeNode
+                  node={root}
+                  tree={tree}
+                  ctx={ctx}
+                  depth={0}
+                  defaultOpen={roots.length <= 6}
+                  canCreateWork={canCreateWork}
+                />
               </li>
             ))}
           </ul>
@@ -89,12 +98,14 @@ function TreeNode({
   ctx,
   depth,
   defaultOpen,
+  canCreateWork,
 }: {
   node: WorkItem;
   tree: TreeIndex;
   ctx: Awaited<ReturnType<typeof getBocContext>>;
   depth: number;
   defaultOpen?: boolean;
+  canCreateWork: boolean;
 }) {
   const children = (tree.childrenOf.get(node.id) ?? []).filter((c) => !c.is_archived);
   const overdue = isOverdue(node, ctx.today);
@@ -114,6 +125,16 @@ function TreeNode({
         <span className="font-mono text-[11px] text-[var(--text-subtle)]">{node.code}</span>{' '}
         <span className={depth === 0 ? 'font-medium' : ''}>{node.title}</span>
       </Link>
+
+      {canCreateWork ? (
+        <Link
+          href={`/work-items/new?parent=${node.id}&level=${node.level + 1}`}
+          className="shrink-0 rounded-[var(--radius-sm)] border border-[var(--border)] px-2 py-1 text-[11px] text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"
+          title={`Tạo công việc con L${node.level + 1}`}
+        >
+          + L{node.level + 1}
+        </Link>
+      ) : null}
 
       <span className="hidden w-32 shrink-0 md:block">
         <ProgressBar value={node.effective_progress} size="sm" />
@@ -172,7 +193,13 @@ function TreeNode({
       <ul className="border-l border-[var(--border)]" style={{ marginLeft: `${1 + depth}rem` }}>
         {children.map((child) => (
           <li key={child.id}>
-            <TreeNode node={child} tree={tree} ctx={ctx} depth={depth + 1} />
+            <TreeNode
+              node={child}
+              tree={tree}
+              ctx={ctx}
+              depth={depth + 1}
+              canCreateWork={canCreateWork}
+            />
           </li>
         ))}
       </ul>

@@ -9,8 +9,8 @@
 // Enum nghiệp vụ
 // ---------------------------------------------------------------------------
 
-/** L3 chương trình · L4 danh mục · L5 nhiệm vụ · L6 tác nghiệp (guideline 3.1). */
-export type WorkLevel = 3 | 4 | 5 | 6;
+/** L3 là gốc nghiệp vụ; các lớp con từ L4 trở đi không có giới hạn cứng. */
+export type WorkLevel = number;
 
 /** Guideline 3.4. `OVERDUE` là derived, không nằm ở đây. */
 export type WorkStatus =
@@ -162,7 +162,7 @@ export interface WorkItem {
   level: WorkLevel;
   parent_id: string | null;
   root_id: string;
-  /** `/<L3>/<L4>/<L5>` — server sinh, không nhận từ client. */
+  /** Đường dẫn đầy đủ từ L3 tới node — server sinh, không nhận từ client. */
   path: string;
   depth: number;
   year: number;

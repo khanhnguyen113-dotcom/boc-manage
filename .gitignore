@@ -12,6 +12,7 @@ next-env.d.ts
 /coverage
 /out
 /build
+/data/backups/
 
 # Khóa/certificate và log cục bộ.
 *.pem

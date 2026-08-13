@@ -14,6 +14,8 @@ export interface ColumnInfo {
   key: string;
   status?: string;
   required?: boolean;
+  min?: number | bigint | null;
+  max?: number | bigint | null;
   error?: string;
 }
 

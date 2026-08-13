@@ -17,7 +17,7 @@ src/
 │   ├── (portal)/                     shell có sidebar + topbar
 │   │   ├── dashboard/                Control Tower
 │   │   ├── my-work/                  Việc của tôi + quick update
-│   │   ├── work-map/                 cây L3–L6
+│   │   ├── work-map/                 cây từ L3 trở xuống
 │   │   ├── work-items/               bảng · [id] chi tiết · new/edit
 │   │   ├── calendar/                 lịch & deadline
 │   │   ├── workload/                 tải nguồn lực
@@ -62,7 +62,7 @@ Không có đường ghi nào đi vòng qua hàm này.
 | **P0** | Đọc guideline, trích dữ liệu Sheet, lập PLAN/DECISIONS/TRACEABILITY/NEED_CONFIRMATION | ✅ |
 | **P1** | Foundation: scaffold, config/env, design system, app shell, health/ready, Docker | ✅ |
 | **P2** | Authorization & audit: role/capability/scope, session cookie, audit append-only, outbox | ✅ |
-| **P3** | Work Core: schema, cây L3–L6, bảng/chi tiết/form, assignments, transitions, comments | ✅ |
+| **P3** | Work Core: schema, cây từ L3 trở xuống, bảng/chi tiết/form, assignments, transitions, comments | ✅ |
 | **P4** | Rules & Daily Work: roll-up tiến độ/ngày/giờ, data quality, My Work, execution logs, notifications | ✅ |
 | **P5** | Control Tower & Reports: dashboard, workload, calendar, report service, export XLSX/CSV | ✅ |
 | **P6** | Migration & UAT: import Sheet dry-run, reconciliation, đào tạo | 🔶 script + dry-run sẵn sàng; **chờ dữ liệu đã chốt và biên bản đối soát** |

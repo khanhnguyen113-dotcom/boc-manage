@@ -175,7 +175,7 @@ export function computeControlTower(
       excluded: items.length - active.length,
       reasons: ['Đã hủy hoặc lưu trữ'],
       drilldown: 'status=active',
-      hint: 'Toàn bộ node L3–L6 chưa hủy, chưa lưu trữ.',
+      hint: 'Toàn bộ công việc từ L3 trở xuống chưa hủy, chưa lưu trữ.',
     }),
     kpi('active_leaves', 'Điểm cuối đang hoạt động', activeLeaves.length, 'count', {
       eligible: activeLeaves.length,

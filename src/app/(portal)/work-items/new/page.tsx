@@ -40,7 +40,7 @@ export default async function NewWorkItemPage({
 
   // Chỉ đề xuất làm cha những node mà người này thực sự thấy được.
   const parents = items
-    .filter((item) => item.level < 6 && !item.is_archived && item.status !== 'CANCELLED')
+    .filter((item) => !item.is_archived && item.status !== 'CANCELLED')
     .map((item) => ({
       id: item.id,
       code: item.code,
@@ -53,7 +53,7 @@ export default async function NewWorkItemPage({
     <div className="mx-auto max-w-5xl space-y-5">
       <PageHeader
         title="Tạo công việc mới"
-        description="Mã công việc do hệ thống sinh tự động theo cấp và năm. Các giá trị tính toán (tiến độ cuộn, ngày hiển thị, chất lượng dữ liệu) sẽ được cập nhật ngay sau khi lưu."
+        description="Mã công việc do hệ thống sinh tự động theo cấp và năm. Có thể tiếp tục phân rã sâu hơn L5 khi cần; các giá trị cuộn được cập nhật ngay sau khi lưu."
       />
 
       <WorkItemForm

@@ -103,6 +103,17 @@ async function existingColumns(tableId: string): Promise<Map<string, ColumnInfo>
   return new Map(columns.map((column) => [column.key, column]));
 }
 
+const APPWRITE_INT64_MIN = '-9223372036854775808';
+const APPWRITE_INT64_MAX = '9223372036854775807';
+
+function normalizedIntegerBound(
+  value: number | bigint | null | undefined,
+  unconstrainedValue: string,
+): number | undefined {
+  if (value == null || String(value) === unconstrainedValue) return undefined;
+  return Number(value);
+}
+
 async function ensureColumn(tableId: string, key: string, spec: ColumnSpec): Promise<void> {
   const base = { databaseId, tableId, key };
 
@@ -170,6 +181,29 @@ async function ensureColumn(tableId: string, key: string, spec: ColumnSpec): Pro
     created += 1;
   } catch (error) {
     if (isDuplicate(error)) {
+      if (spec.kind === 'integer') {
+        const actual = (await existingColumns(tableId)).get(key);
+        const actualMin = normalizedIntegerBound(actual?.min, APPWRITE_INT64_MIN);
+        const actualMax = normalizedIntegerBound(actual?.max, APPWRITE_INT64_MAX);
+        if (actualMin !== spec.min || actualMax !== spec.max) {
+          await tablesDB.updateIntegerColumn({
+            databaseId,
+            tableId,
+            key,
+            required: spec.required ?? false,
+            // SDK bỏ trường undefined (khiến giới hạn cũ còn nguyên), nên gửi biên int64 đầy đủ
+            // để biểu thị cột không có giới hạn nghiệp vụ.
+            min: spec.min ?? BigInt(APPWRITE_INT64_MIN),
+            max: spec.max ?? BigInt(APPWRITE_INT64_MAX),
+            // Appwrite yêu cầu trường `default` khi update và dùng null để biểu thị không có default;
+            // type của SDK 27.1.0 chưa phản ánh giá trị null hợp lệ này.
+            xdefault: (spec.required ? null : (spec.default ?? null)) as unknown as number,
+          });
+          console.log(`~ Mở rộng ràng buộc số ${tableId}.${key}`);
+          created += 1;
+          return;
+        }
+      }
       skipped += 1;
       return;
     }

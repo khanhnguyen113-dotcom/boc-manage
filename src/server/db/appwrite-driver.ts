@@ -195,6 +195,10 @@ export function createAppwriteStore(): DataStore {
       return toRow<T>(table, updated as unknown as Record<string, unknown>);
     },
 
+    async delete(table: TableName, id: string): Promise<void> {
+      await tablesDB.deleteRow({ databaseId, tableId: table, rowId: id });
+    },
+
     async updateMany(
       table: TableName,
       updates: { id: string; patch: Record<string, unknown> }[],

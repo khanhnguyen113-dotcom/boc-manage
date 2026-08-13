@@ -172,6 +172,14 @@ function createHandle(getDb: () => Database, onMutate: (db: Database) => void): 
       return updated;
     },
 
+    async delete(table: TableName, id: string): Promise<void> {
+      const db = getDb();
+      const index = db[table].findIndex((row) => row.id === id);
+      if (index === -1) return;
+      db[table].splice(index, 1);
+      onMutate(db);
+    },
+
     async updateMany(
       table: TableName,
       updates: { id: string; patch: Record<string, unknown> }[],

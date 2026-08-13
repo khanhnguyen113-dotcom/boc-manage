@@ -64,6 +64,7 @@ export interface DataStore {
   get<T extends Row>(table: TableName, id: string): Promise<T | null>;
   insert<T extends Row>(table: TableName, row: Omit<T, 'created_at' | 'updated_at'>): Promise<T>;
   update<T extends Row>(table: TableName, id: string, patch: Partial<T>): Promise<T>;
+  delete(table: TableName, id: string): Promise<void>;
   /**
    * Ghi đè theo `id`, tạo mới nếu chưa có. Dùng cho seed/import — chạy lại nhiều lần cho cùng
    * kết quả mà không cần đọc trước để kiểm tra tồn tại.

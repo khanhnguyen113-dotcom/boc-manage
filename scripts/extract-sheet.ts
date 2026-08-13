@@ -379,7 +379,7 @@ function resolveHierarchy(rows: RawRow[]): RawRow[] {
 }
 
 /**
- * Gán Lớp 1/Lớp 2: L3 lấy từ tab “Lớp 3”, L4–L6 kế thừa từ tổ tiên L3 (BR-HIE-003).
+ * Gán Lớp 1/Lớp 2: L3 lấy từ tab “Lớp 3”, các lớp sâu hơn kế thừa từ tổ tiên L3 (BR-HIE-003).
  * Thiếu phân loại là lỗi dữ liệu chứ không phải mặc định im lặng.
  */
 function applyTaxonomy(rows: RawRow[], taxonomy: Map<string, Taxonomy>): void {

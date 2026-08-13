@@ -23,7 +23,7 @@ Mức độ chặn:
 | A2 | Danh sách user, đơn vị, manager và quan hệ quản lý chính thức? | 🔴 | 5 người + 7 đơn vị lấy từ `_DM_Dropdown` của Sheet | `data/seed/users.json`, `units.json` |
 | A3 | Email thật của từng thành viên (Sheet chỉ có biệt danh “GĐ BOC”, “Em Đại”, “Ms Trang”, “Thu Trang”, “Team PTSP”) | 🔴 | Sinh email giả `<slug>@boc.local` | `data/seed/users.json` |
 | A4 | Đăng nhập email/password hay SSO; có 2FA không? | 🟠 | Email + password (Appwrite Auth), không SSO/2FA | `src/server/auth/*` |
-| A5 | System admin có được đọc toàn bộ nội dung nghiệp vụ không? | 🟠 | **Không**: `system_admin` chỉ có capability vận hành + audit | `src/domain/permissions.ts` |
+| A5 | System admin có được đọc toàn bộ nội dung nghiệp vụ không? | ✅ Đã chốt 13/08/2026 | **Có**: `system_admin` là super admin, có toàn bộ capability và phạm vi `ALL` | `src/domain/permissions.ts` |
 
 ## B. Quy tắc tính toán (ảnh hưởng trực tiếp con số)
 

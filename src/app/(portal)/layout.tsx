@@ -24,7 +24,14 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-dvh bg-[var(--canvas)]">
-      <Sidebar mainNav={mainNav} adminNav={adminNav} unreadCount={unreadCount} />
+      <Sidebar
+        mainNav={mainNav}
+        adminNav={adminNav}
+        unreadCount={unreadCount}
+        canCreateWork={
+          user.capabilities.has('work.create_l3') || user.capabilities.has('work.create_child')
+        }
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar

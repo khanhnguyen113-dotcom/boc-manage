@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CAPABILITIES,
   canReadWorkItem,
   canWriteWorkItem,
   effectiveCapabilities,
@@ -27,9 +28,11 @@ function actor(overrides: Partial<Actor> = {}): Actor {
 }
 
 describe('effective capability', () => {
-  it('member có quyền cập nhật tiến độ, không có quyền giao việc', () => {
+  it('member có quyền cập nhật tiến độ và tạo công việc, không có quyền giao việc', () => {
     const a = actor();
     expect(hasCapability(a, 'work.update_progress')).toBe(true);
+    expect(hasCapability(a, 'work.create_l3')).toBe(true);
+    expect(hasCapability(a, 'work.create_child')).toBe(true);
     expect(hasCapability(a, 'work.assign')).toBe(false);
   });
 
@@ -53,12 +56,13 @@ describe('effective capability', () => {
     expect(hasCapability(a, 'portal.access')).toBe(false);
   });
 
-  it('system_admin không có quyền nghiệp vụ (NEED_CONFIRMATION A5)', () => {
+  it('system_admin là super admin có toàn bộ capability', () => {
     const a = actor({ roles: ['system_admin'] });
     expect(hasCapability(a, 'settings.manage')).toBe(true);
     expect(hasCapability(a, 'audit.view')).toBe(true);
-    expect(hasCapability(a, 'work.edit_core')).toBe(false);
-    expect(hasCapability(a, 'work.view')).toBe(false);
+    expect(hasCapability(a, 'work.edit_core')).toBe(true);
+    expect(hasCapability(a, 'work.view')).toBe(true);
+    expect(effectiveCapabilities(a).size).toBe(CAPABILITIES.length);
   });
 
   it('auditor xem và xuất báo cáo nhưng không sửa nghiệp vụ', () => {
@@ -85,6 +89,10 @@ describe('effective capability', () => {
 describe('data scope', () => {
   it('boc_director thấy toàn BOC', () => {
     expect(resolveScope(actor({ roles: ['boc_director'] })).all).toBe(true);
+  });
+
+  it('system_admin thấy toàn BOC', () => {
+    expect(resolveScope(actor({ roles: ['system_admin'] })).all).toBe(true);
   });
 
   it('unit_manager thấy đơn vị mình quản lý', () => {

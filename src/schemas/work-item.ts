@@ -26,12 +26,7 @@ const safeUrl = z
     'Link kết quả phải bắt đầu bằng http:// hoặc https://',
   );
 
-export const workLevelSchema = z.union([
-  z.literal(3),
-  z.literal(4),
-  z.literal(5),
-  z.literal(6),
-]);
+export const workLevelSchema = z.number().int().min(3);
 
 export const workStatusSchema = z.enum([
   'NOT_SCHEDULED',
@@ -75,7 +70,7 @@ export const createWorkItemSchema = z
     result_link: safeUrl,
   })
   .refine((v) => v.level === 3 || Boolean(v.parent_id), {
-    message: 'Công việc L4–L6 bắt buộc chọn công việc cha',
+    message: 'Công việc từ L4 trở đi bắt buộc chọn công việc cha',
     path: ['parent_id'],
   })
   .refine((v) => v.level !== 3 || !v.parent_id, {

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T09:21:55.543Z",
+  "generated_at": "2026-08-13T04:08:25.693Z",
   "database_id": "boc_control_tower",
   "tables": [
     {
@@ -134,11 +134,13 @@
         },
         {
           "key": "valid_from",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "valid_to",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         }
       ],
       "indexes": [
@@ -186,7 +188,8 @@
         },
         {
           "key": "valid_to",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         }
       ],
       "indexes": [
@@ -231,7 +234,8 @@
         },
         {
           "key": "expires_at",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "granted_by",
@@ -403,7 +407,7 @@
     },
     {
       "id": "work_items",
-      "name": "Công việc L3–L6",
+      "name": "Cây công việc từ L3 trở xuống",
       "append_only": false,
       "columns": [
         {
@@ -421,8 +425,7 @@
           "key": "level",
           "kind": "integer",
           "required": true,
-          "min": 3,
-          "max": 6
+          "min": 3
         },
         {
           "key": "parent_id",
@@ -445,8 +448,7 @@
           "key": "depth",
           "kind": "integer",
           "required": true,
-          "min": 0,
-          "max": 3
+          "min": 0
         },
         {
           "key": "year",
@@ -546,23 +548,28 @@
         },
         {
           "key": "review_date",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "planned_start",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "planned_end",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "display_start",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "display_end",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "manual_progress",
@@ -601,7 +608,8 @@
         },
         {
           "key": "completed_at",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "result_link",
@@ -914,15 +922,18 @@
         {
           "key": "period_start",
           "kind": "datetime",
-          "required": true
+          "required": true,
+          "businessDate": true
         },
         {
           "key": "period_end",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "occurrence_due_at",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "status",
@@ -976,7 +987,8 @@
         },
         {
           "key": "completed_at",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         },
         {
           "key": "created_by",
@@ -1280,7 +1292,8 @@
         {
           "key": "holiday_date",
           "kind": "datetime",
-          "required": true
+          "required": true,
+          "businessDate": true
         },
         {
           "key": "name",
@@ -1344,11 +1357,13 @@
         {
           "key": "effective_from",
           "kind": "datetime",
-          "required": true
+          "required": true,
+          "businessDate": true
         },
         {
           "key": "effective_to",
-          "kind": "datetime"
+          "kind": "datetime",
+          "businessDate": true
         }
       ],
       "indexes": [

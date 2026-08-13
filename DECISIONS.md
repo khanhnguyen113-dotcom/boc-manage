@@ -7,13 +7,14 @@ người duyệt** (ghi rõ tên + ngày).
 
 ---
 
-## ADR-001 — Một bảng `work_items` duy nhất cho L3–L6
+## ADR-001 — Một bảng `work_items` duy nhất cho cây từ L3 trở xuống
 
 **Bối cảnh.** Sheet nguồn có 4 tab riêng (Lớp 3/4/5/6) cộng thêm “Lớp tổng hợp”. Mỗi tab lặp lại
 cột của tab cha, dẫn tới `#REF!`, lệch số và không thể phân quyền theo record.
 
-**Quyết định.** Dùng **một** bảng `work_items` với `level ∈ {3,4,5,6}`, `parent_id`, `root_id`,
-`path`, `depth`. Các tab Sheet trở thành **view** có filter `level = n`.
+**Quyết định.** Dùng **một** bảng `work_items` với `level >= 3`, `parent_id`, `root_id`,
+`path`, `depth`. Giao diện tập trung hiển thị đến L5 nhưng cho phép phân rã sâu hơn khi cần;
+các tab Sheet cũ trở thành **view** có filter `level = n`.
 
 **Hệ quả.** Query cây bằng `root_id`/`path`; ràng buộc cấp cha kiểm ở domain (`BR-HIE-001..002`).
 Không có bảng nào là “bản sao đã tổng hợp” — mọi tổng hợp là derived.

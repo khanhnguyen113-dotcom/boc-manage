@@ -181,15 +181,15 @@ export const TABLES = {
 
   work_items: {
     id: 'work_items',
-    name: 'Công việc L3–L6',
+    name: 'Cây công việc từ L3 trở xuống',
     columns: {
       code: { kind: 'varchar', size: 80, required: true },
       legacy_code: { kind: 'varchar', size: 80 },
-      level: { kind: 'integer', required: true, min: 3, max: 6 },
+      level: { kind: 'integer', required: true, min: 3 },
       parent_id: id36,
       root_id: id36Required,
       path: { kind: 'varchar', size: 500, required: true },
-      depth: { kind: 'integer', required: true, min: 0, max: 3 },
+      depth: { kind: 'integer', required: true, min: 0 },
       year: { kind: 'integer', required: true },
       management_level_id: id36Required,
       category_id: id36Required,

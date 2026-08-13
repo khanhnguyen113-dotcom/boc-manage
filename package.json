@@ -17,6 +17,7 @@
     "seed": "tsx --tsconfig tsconfig.scripts.json scripts/seed.ts",
     "extract:sheet": "tsx --tsconfig tsconfig.scripts.json scripts/extract-sheet.ts",
     "check:appwrite": "tsx --tsconfig tsconfig.scripts.json scripts/check-connection.ts",
+    "reset:users": "tsx --tsconfig tsconfig.scripts.json scripts/reset-users.ts",
     "bootstrap:appwrite": "tsx --tsconfig tsconfig.scripts.json scripts/bootstrap-appwrite.ts",
     "verify:schema": "tsx --tsconfig tsconfig.scripts.json scripts/verify-schema.ts",
     "import:dry-run": "tsx --tsconfig tsconfig.scripts.json scripts/import-google-sheet.ts --dry-run",

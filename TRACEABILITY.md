@@ -11,7 +11,7 @@ import (mục 12.5).
 | Tab Sheet nguồn | Vai trò trong Sheet | Nơi thể hiện trong webapp | Ghi chú |
 |---|---|---|---|
 | Hướng dẫn | 5 quy tắc nhập liệu | Text trợ giúp trong form + validation Zod | Quy tắc trở thành ràng buộc thật, không còn là lời nhắc |
-| Trung tâm nhập liệu | Bảng master L3–L6 | `work_items` (bảng duy nhất) | ADR-001 |
+| Trung tâm nhập liệu | Bảng master từ L3 trở xuống | `work_items` (bảng duy nhất) | ADR-001 |
 | Nhật ký thực hiện (trong master) | Từng lần thực hiện | `execution_logs` | Nguồn duy nhất của số liệu định kỳ |
 | Lớp 1–Lớp 2 | Phân loại quản trị | `management_levels`, `work_categories` | |
 | Lớp 3 / 4 / 5 / 6 | 4 tab lặp cột của nhau | View có filter `level = n` | Không còn 4 bản sao dữ liệu |
@@ -97,7 +97,7 @@ import (mục 12.5).
 
 | Tiêu chí | Kiểm chứng |
 |---|---|
-| Tạo đúng L3–L6, chặn sai quan hệ/cycle | `hierarchy.test.ts` (19 test) + validation trong form |
+| Tạo từ L3 xuống không giới hạn độ sâu, chặn sai quan hệ/cycle | `hierarchy.test.ts` (20 test) + validation trong form |
 | Progress chỉ nhập leaf, roll-up đúng | `progress.test.ts`, `recalc.test.ts` |
 | Baseline/display dates và cảnh báo con | `dates.test.ts` + banner cảnh báo ở trang chi tiết |
 | Status/transition/completion evidence | `status.test.ts` + `StatusPanel` chỉ hiện bước hợp lệ |

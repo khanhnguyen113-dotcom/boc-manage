@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Activity, GitBranch, ShieldCheck } from 'lucide-react';
 
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Alert } from '@/components/ui/primitives';
 import { env } from '@/config/env';
 import { getSessionUser } from '@/server/auth/current-user';
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: 'Đăng nhập' };
 const HIGHLIGHTS = [
   {
     icon: GitBranch,
-    title: 'Một cây công việc L3–L6',
+    title: 'Một cây công việc không giới hạn độ sâu',
     body: 'Thay 5 tab rời rạc bằng một cấu trúc duy nhất, tiến độ tự cuộn từ điểm cuối lên.',
   },
   {
@@ -85,7 +86,10 @@ export default async function LoginPage({
       </section>
 
       {/* Cột đăng nhập */}
-      <section className="flex items-center justify-center bg-[var(--canvas)] px-6 py-12">
+      <section className="relative flex items-center justify-center bg-[var(--canvas)] px-6 py-12">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-sm space-y-6">
           <div className="lg:hidden">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--text-subtle)]">

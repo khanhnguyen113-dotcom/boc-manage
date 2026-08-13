@@ -84,7 +84,7 @@ Quyết định kỹ thuật: [DECISIONS.md](DECISIONS.md).
 
 | Nhóm rule | Ở đâu | Test |
 |---|---|---|
-| Cây L3–L6, cấp cha, chống cycle, điểm cuối | `domain/hierarchy.ts` | 19 |
+| Cây từ L3 trở xuống, cấp cha, chống cycle, điểm cuối | `domain/hierarchy.ts` | 20 |
 | Cuộn tiến độ, loại trừ nhóm/trạng thái | `domain/progress.ts` | 16 |
 | Ngày kế hoạch gốc vs hiển thị, cảnh báo con vượt khung | `domain/dates.ts` | 20 |
 | Ngày làm việc, ngày nghỉ, quá hạn, “còn N ngày” | `domain/business-days.ts` | 18 |

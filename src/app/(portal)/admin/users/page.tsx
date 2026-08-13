@@ -9,11 +9,12 @@ import { formatDateTime, formatHours, initials } from '@/lib/format';
 import { requireCapability } from '@/server/auth/current-user';
 import { listProfiles, unitMap } from '@/server/repositories/catalogs';
 import { listUserRoles } from '@/server/services/users';
+import { CreateUserForm } from './create-user-form';
 
 export const metadata: Metadata = { title: 'Người dùng & phân quyền' };
 
 export default async function AdminUsersPage() {
-  await requireCapability('user.manage');
+  const currentUser = await requireCapability('user.manage');
 
   const [profiles, roles, units] = await Promise.all([listProfiles(), listUserRoles(), unitMap()]);
 
@@ -23,6 +24,17 @@ export default async function AdminUsersPage() {
         title="Người dùng & phân quyền"
         description="Vai trò quyết định capability; phạm vi dữ liệu quyết định người đó nhìn thấy bản ghi nào. Hai thứ này độc lập nhau."
       />
+
+      <Card>
+        <CardHeader
+          title="Tạo người dùng mới"
+          description="Tài khoản được tạo đồng thời trong Appwrite Auth và dữ liệu phân quyền của BOC. Super admin có thể tạo mọi vai trò."
+        />
+        <CreateUserForm
+          units={[...units.values()].map((unit) => ({ value: unit.id, label: unit.name }))}
+          canManagePrivileged={currentUser.capabilities.has('permission.manage')}
+        />
+      </Card>
 
       <Card className="overflow-hidden">
         <CardHeader
@@ -120,8 +132,7 @@ export default async function AdminUsersPage() {
             ))}
           </ul>
           <p className="mt-4 text-[11px] text-[var(--text-muted)]">
-            Lưu ý: <strong>Quản trị hệ thống</strong> cố tình không có quyền đọc nội dung nghiệp vụ —
-            quyết định này đang chờ BOC xác nhận, xem mục A5 trong NEED_CONFIRMATION.{' '}
+            <strong>Quản trị hệ thống</strong> là super admin, có toàn bộ capability và phạm vi dữ liệu toàn BOC.{' '}
             <Link href="/profile" className="underline">
               Xem quyền hiệu lực của chính bạn
             </Link>

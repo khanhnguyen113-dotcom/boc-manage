@@ -7,6 +7,7 @@ import { ROLE_LABELS } from '@/domain/catalogs';
 import type { RoleCode } from '@/domain/types';
 import { initials } from '@/lib/format';
 import { formatDate } from '@/domain/business-days';
+import { ThemeToggle } from './theme-toggle';
 
 /**
  * Thanh trên: ngày nghiệp vụ đang áp dụng, thông báo chưa đọc và hồ sơ.
@@ -55,6 +56,8 @@ export function Topbar({
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <ThemeToggle />
+
           <Link
             href="/notifications"
             className="relative rounded-[var(--radius)] p-2 text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"

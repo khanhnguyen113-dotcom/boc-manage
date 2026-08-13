@@ -39,6 +39,12 @@ describe('BR-HIE-001 · cấp cha bắt buộc', () => {
     const parent = makeWorkItem({ level: 5 });
     expect(validateParentRelation({ level: 6, parent })).toBeNull();
   });
+
+  it('cho phép phân rã tiếp không giới hạn cứng sau L6', () => {
+    const parent = makeWorkItem({ level: 11 });
+    expect(requiredParentLevel(12)).toBe(11);
+    expect(validateParentRelation({ level: 12, parent })).toBeNull();
+  });
 });
 
 describe('BR-HIE-002 · chống self-parent và cycle', () => {

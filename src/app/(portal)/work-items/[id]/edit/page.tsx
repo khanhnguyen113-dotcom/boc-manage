@@ -46,7 +46,6 @@ export default async function EditWorkItemPage({ params }: { params: Promise<{ i
     .filter(
       (candidate) =>
         candidate.id !== item.id &&
-        candidate.level < 6 &&
         !candidate.is_archived &&
         candidate.status !== 'CANCELLED',
     )

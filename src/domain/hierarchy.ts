@@ -1,5 +1,5 @@
 /**
- * Quan hệ cây L3–L6: validate cấp cha, chống cycle, sinh `path`/`root_id`/`depth`,
+ * Quan hệ cây từ L3 trở xuống: validate cấp cha, chống cycle, sinh `path`/`root_id`/`depth`,
  * xác định điểm cuối (leaf).
  *
  * Guideline 3.1 và BR-HIE-001…006.
@@ -8,15 +8,12 @@
 import type { WorkItem, WorkLevel } from './types';
 
 export const MIN_LEVEL: WorkLevel = 3;
-export const MAX_LEVEL: WorkLevel = 6;
-
-export const ALL_LEVELS: WorkLevel[] = [3, 4, 5, 6];
 
 export function isWorkLevel(value: unknown): value is WorkLevel {
-  return value === 3 || value === 4 || value === 5 || value === 6;
+  return typeof value === 'number' && Number.isInteger(value) && value >= MIN_LEVEL;
 }
 
-/** Cấp cha hợp lệ của một cấp: L4→L3, L5→L4, L6→L5. L3 không có cha. */
+/** Cấp cha hợp lệ luôn là lớp liền trước; L3 là gốc và không có cha. */
 export function requiredParentLevel(level: WorkLevel): WorkLevel | null {
   return level === MIN_LEVEL ? null : ((level - 1) as WorkLevel);
 }
@@ -104,7 +101,7 @@ export function computeRootId(itemId: string, parent: WorkItem | null): string {
 }
 
 export function computeDepth(level: WorkLevel): number {
-  return level - MIN_LEVEL;
+  return Math.max(0, level - MIN_LEVEL);
 }
 
 // ---------------------------------------------------------------------------

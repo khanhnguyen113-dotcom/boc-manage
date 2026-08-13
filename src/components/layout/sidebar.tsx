@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, PanelLeftClose, X } from 'lucide-react';
+import { Menu, PanelLeftClose, Plus, X } from 'lucide-react';
 
 import { NAV_ICONS, type NavItem } from '@/config/navigation';
 import { cn } from '@/lib/cn';
@@ -16,10 +16,12 @@ export function Sidebar({
   mainNav,
   adminNav,
   unreadCount,
+  canCreateWork,
 }: {
   mainNav: NavItem[];
   adminNav: NavItem[];
   unreadCount: number;
+  canCreateWork: boolean;
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -30,6 +32,21 @@ export function Sidebar({
 
   const nav = (
     <nav className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-4" aria-label="Điều hướng chính">
+      {canCreateWork ? (
+        <Link
+          href="/work-items/new"
+          onClick={() => setMobileOpen(false)}
+          title={collapsed ? 'Tạo công việc' : 'Mở khu vực nhập công việc tập trung'}
+          className={cn(
+            'flex items-center justify-center gap-2 rounded-[var(--radius)] bg-[var(--brand-600)] px-3 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-[var(--brand-700)]',
+            collapsed && 'px-0',
+          )}
+        >
+          <Plus aria-hidden className="size-4" />
+          {!collapsed ? 'Tạo công việc' : null}
+        </Link>
+      ) : null}
+
       <Section
         items={mainNav}
         collapsed={collapsed}

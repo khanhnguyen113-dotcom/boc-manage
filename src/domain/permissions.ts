@@ -64,7 +64,7 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
   'dashboard.view_self': 'Xem tổng quan của cá nhân',
   'work.view': 'Xem công việc',
   'work.create_l3': 'Tạo công việc L3',
-  'work.create_child': 'Tạo công việc con L4–L6',
+  'work.create_child': 'Tạo công việc con từ L4 trở xuống',
   'work.edit_core': 'Sửa nội dung cốt lõi',
   'work.assign': 'Giao/đổi người thực hiện',
   'work.change_priority': 'Đổi mức độ ưu tiên',
@@ -101,6 +101,10 @@ const MEMBER_BASE: Capability[] = [
   'portal.access',
   'dashboard.view_self',
   'work.view',
+  // Mọi thành viên đều được chủ động tạo công việc và phân rã tiếp thành công việc con.
+  // Quyền nhìn/ghi trên từng nhánh vẫn được kiểm tra riêng bởi scope và record relation.
+  'work.create_l3',
+  'work.create_child',
   'work.update_progress',
   'work.change_status',
   'work.complete',
@@ -142,21 +146,8 @@ const BUSINESS_ADMIN_BASE: Capability[] = [
   'audit.view',
 ];
 
-/**
- * `system_admin` cố tình **không** có `work.*` nghiệp vụ (NEED_CONFIRMATION A5):
- * quản trị kỹ thuật ≠ quyền đọc/sửa nội dung công việc.
- */
-const SYSTEM_ADMIN_BASE: Capability[] = [
-  'portal.access',
-  'user.manage',
-  'permission.manage',
-  'organization.manage',
-  'catalog.manage',
-  'calendar.manage',
-  'settings.manage',
-  'import.execute',
-  'audit.view',
-];
+/** Super admin vận hành hệ thống: có toàn bộ capability và scope toàn BOC. */
+const SYSTEM_ADMIN_BASE: Capability[] = [...CAPABILITIES];
 
 export const ROLE_BASELINE: Record<RoleCode, readonly Capability[]> = {
   system_admin: SYSTEM_ADMIN_BASE,
@@ -252,7 +243,12 @@ export function resolveScope(actor: Actor): EffectiveScope {
   }
 
   // boc_director / business_admin / auditor nhìn toàn BOC theo baseline vai trò.
-  if (actor.roles.some((r) => r === 'boc_director' || r === 'business_admin' || r === 'auditor')) {
+  if (
+    actor.roles.some(
+      (r) =>
+        r === 'system_admin' || r === 'boc_director' || r === 'business_admin' || r === 'auditor',
+    )
+  ) {
     all = true;
   }
 

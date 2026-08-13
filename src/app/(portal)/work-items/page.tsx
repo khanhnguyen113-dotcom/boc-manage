@@ -60,7 +60,7 @@ export default async function WorkItemsPage({
     <div className="space-y-5">
       <PageHeader
         title="Tất cả công việc"
-        description="Toàn bộ cây L3–L6 trong phạm vi dữ liệu của bạn. Lọc, sắp xếp và phân trang đều chạy phía máy chủ."
+        description="Toàn bộ cây công việc từ L3 trở xuống trong phạm vi dữ liệu của bạn. Lọc, sắp xếp và phân trang đều chạy phía máy chủ."
         actions={
           <>
             {user.capabilities.has('report.export') ? (
@@ -116,7 +116,7 @@ export default async function WorkItemsPage({
           />
         ) : (
           <>
-            <TableShell caption="Danh sách công việc L3–L6">
+            <TableShell caption="Danh sách công việc từ L3 trở xuống">
               <thead>
                 <tr>
                   <SortHeader field="code" currentSort={currentSort} currentDir={currentDir} baseParams={baseParams}>

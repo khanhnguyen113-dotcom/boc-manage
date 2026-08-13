@@ -56,7 +56,7 @@ export const MAIN_NAV: NavItem[] = [
     label: 'Bản đồ công việc',
     icon: 'GitBranch',
     capability: 'work.view',
-    description: 'Cây phân rã L3 → L4 → L5 → L6',
+    description: 'Cây phân rã từ L3, mặc định tập trung đến L5 và có thể sâu hơn',
   },
   {
     href: '/work-items',

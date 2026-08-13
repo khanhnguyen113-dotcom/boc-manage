@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Be_Vietnam_Pro } from 'next/font/google';
+import Script from 'next/script';
 
 import './globals.css';
 
@@ -35,12 +36,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={beVietnam.variable}>
+    <html lang="vi" className={beVietnam.variable} data-theme="light" suppressHydrationWarning>
       <body className="min-h-dvh antialiased">
         <a href="#noi-dung-chinh" className="skip-link">
           Bỏ qua điều hướng
         </a>
         {children}
+        <Script id="boc-theme" strategy="beforeInteractive">
+          {`try{var t=localStorage.getItem('boc-theme');document.documentElement.dataset.theme=t==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}`}
+        </Script>
       </body>
     </html>
   );
