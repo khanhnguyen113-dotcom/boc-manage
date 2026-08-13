@@ -16,7 +16,8 @@ volume và backup riêng.
 5. Không override Install/Build/Start Command trong UI. Dokploy sẽ đọc `nixpacks.toml` ở root:
    - Node.js 22 từ `.nvmrc`;
    - install bằng lockfile;
-   - build Next.js standalone và chép đủ static/public asset;
+   - build Next.js standalone bằng Webpack tiết kiệm RAM, một worker, heap tối đa 768 MB;
+   - chép đủ static/public asset;
    - start bằng `node .next/standalone/server.js`.
 6. Trong tab **Environment**, thêm các biến ở mục 2 rồi Deploy.
 
@@ -30,6 +31,8 @@ SESSION_SECRET=thay-bang-chuoi-base64url-ngau-nhien-toi-thieu-32-ky-tu
 APPWRITE_ENDPOINT=https://appwrite.example.com/v1
 APPWRITE_PROJECT_ID=your-project-id
 APPWRITE_SERVER_API_KEY=your-server-api-key
+# Hoặc dùng tên Dokploy đang có (chỉ cần một trong hai key):
+# APPWRITE_API_KEY=your-server-api-key
 
 # Khuyến nghị: Git SHA/release id, đổi theo mỗi bản build
 NEXT_DEPLOYMENT_ID=git-sha-or-release-id
@@ -60,6 +63,14 @@ DEBUG_SQL=false
 
 Không đặt `NIXPACKS_INSTALL_CMD`, `NIXPACKS_BUILD_CMD` hoặc `NIXPACKS_START_CMD` trong Dokploy vì
 chúng có độ ưu tiên cao hơn và sẽ ghi đè `nixpacks.toml`. Không đưa secret vào `NEXT_PUBLIC_*`.
+
+`DATA_DRIVER=appwrite` đã được cố định trong `nixpacks.toml` cho cả build và runtime. Các biến
+`APPWRITE_API_KEY_AUTH` và `APPWRITE_API_KEY_DATA` không thay thế cho server key; ứng dụng cần
+`APPWRITE_SERVER_API_KEY` hoặc alias `APPWRITE_API_KEY`. `SESSION_SECRET` vẫn phải được khai báo
+trên Dokploy vì secret này phải ổn định giữa các lần restart và giữa các replica.
+
+Nếu build báo `JavaScript heap out of memory`, sửa có chủ đích giá trị `768` trong lệnh build của
+`nixpacks.toml` lên `1024`; không đặt heap không giới hạn vì Dokploy build trên cùng VPS production.
 
 ## 3. Domain và HTTPS
 
@@ -113,3 +124,7 @@ curl -fsS https://boc.example.com/api/ready
 
 Kết quả hợp lệ: cả hai trả HTTP 200 và `/api/ready` có `data_store.driver=appwrite`. Sau đó đăng
 nhập bằng tài khoản Appwrite thật, mở một danh sách công việc và kiểm tra log deployment.
+
+`Successfully Built` chỉ xác nhận image đã được tạo, không xác nhận tiến trình server đã chạy.
+Nếu app chưa lên, mở log của container/deployment mới nhất và tìm `Invalid environment configuration`
+hoặc `Server startup failed`; đây mới là runtime log cần dùng để chẩn đoán lỗi khởi động.

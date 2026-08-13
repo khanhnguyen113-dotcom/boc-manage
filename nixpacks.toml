@@ -3,6 +3,7 @@
 
 [variables]
 NODE_ENV = "production"
+DATA_DRIVER = "appwrite"
 HOSTNAME = "0.0.0.0"
 PORT = "3000"
 NEXT_TELEMETRY_DISABLED = "1"
@@ -13,7 +14,7 @@ cmds = ["npm ci --ignore-scripts --no-audit --no-fund"]
 [phases.build]
 # Chỉ dùng placeholder trong đúng tiến trình build để startup validation của Next.js có thể chạy.
 # Secret thật không được ghi vào image; Dokploy inject chúng khi container khởi động.
-cmds = ["DATA_DRIVER=appwrite APPWRITE_ENDPOINT=https://build.invalid/v1 APPWRITE_PROJECT_ID=build APPWRITE_SERVER_API_KEY=build SESSION_SECRET=build-time-placeholder-not-used-at-runtime npm run build:nixpacks"]
+cmds = ["NODE_OPTIONS=--max-old-space-size=768 DATA_DRIVER=appwrite APPWRITE_ENDPOINT=https://build.invalid/v1 APPWRITE_PROJECT_ID=build APPWRITE_SERVER_API_KEY=build SESSION_SECRET=build-time-placeholder-not-used-at-runtime npm run build:nixpacks"]
 
 [start]
 cmd = "npm run start:nixpacks"

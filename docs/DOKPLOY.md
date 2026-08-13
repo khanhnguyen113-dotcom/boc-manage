@@ -38,6 +38,8 @@ APPWRITE_SERVER_API_KEY=your-server-api-key
 # Khuyến nghị: Git SHA hoặc release id; đổi ở mỗi bản build, không phải secret
 NEXT_DEPLOYMENT_ID=git-sha-or-release-id
 IMAGE_TAG=git-sha-or-release-id
+# Mặc định 768 MB, chỉ tăng khi build báo JavaScript heap out of memory
+NEXT_BUILD_MEMORY_MB=768
 
 # ID mặc định — chỉ đổi nếu Appwrite dùng ID khác
 APPWRITE_DATABASE_ID=boc_control_tower
@@ -83,6 +85,16 @@ curl -fsS https://boc.example.com/api/ready
 Healthcheck của image dùng `/api/ready`; container mới chỉ trở thành healthy khi Appwrite sẵn sàng.
 Filesystem runtime đặt read-only, chỉ `/tmp` và cache Next.js là tmpfs. Vì vậy web app không cần
 volume dữ liệu và mỗi lần deploy có thể thay container an toàn.
+
+### Build đứng ở “Creating an optimized production build”
+
+Bản deploy dùng Webpack với một worker, externalize các package server nặng và giới hạn heap compiler
+768 MB để không làm nghẽn VPS. Docker BuildKit cũng cache `.next/cache` giữa các lần build. Không đổi
+lệnh build trong Dokploy thành `next build` hoặc `next build --turbopack`; dùng nguyên Dockerfile.
+
+Nếu log có `JavaScript heap out of memory`, tăng `NEXT_BUILD_MEMORY_MB` theo từng bước nhỏ
+(`1024`, rồi `1280`) và kiểm tra RAM trống. Nếu không có lỗi OOM mà VPS vẫn lag, không tăng giới hạn;
+hãy build image trên CI/registry rồi để Dokploy chỉ pull và chạy image.
 
 ## 5. Cập nhật và rollback
 

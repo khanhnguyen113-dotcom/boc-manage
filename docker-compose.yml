@@ -13,6 +13,8 @@ services:
       args:
         # Khuyến nghị đặt bằng Git SHA/release id trong Dokploy; không phải secret.
         NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:-}
+        # Heap tối đa của compiler trong lúc build; tăng có chủ đích nếu build báo JavaScript OOM.
+        NEXT_BUILD_MEMORY_MB: ${NEXT_BUILD_MEMORY_MB:-768}
     image: boc-control-tower:${IMAGE_TAG:-local}
     restart: unless-stopped
     init: true

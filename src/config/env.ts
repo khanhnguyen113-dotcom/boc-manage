@@ -61,7 +61,18 @@ let cached: AppEnv | null = null;
 export function env(): AppEnv {
   if (cached) return cached;
 
-  const parsed = schema.safeParse(process.env);
+  // Dokploy commonly exposes a single Appwrite key as APPWRITE_API_KEY. Keep
+  // APPWRITE_SERVER_API_KEY canonical inside the application, but accept that
+  // platform alias at the process boundary.
+  const runtimeEnv = {
+    ...process.env,
+    APPWRITE_SERVER_API_KEY:
+      process.env.APPWRITE_SERVER_API_KEY?.trim() ||
+      process.env.APPWRITE_API_KEY?.trim() ||
+      undefined,
+  };
+
+  const parsed = schema.safeParse(runtimeEnv);
   if (!parsed.success) {
     const details = parsed.error.issues
       .map((i) => `  - ${i.path.join('.')}: ${i.message}`)

@@ -30,10 +30,18 @@ ENV APPWRITE_PROJECT_ID=build
 ENV APPWRITE_SERVER_API_KEY=build
 ENV SESSION_SECRET=build-time-placeholder-not-used-at-runtime
 
+# Giới hạn heap của compiler. Với một worker, 768 MB đủ cho project này và tránh build nuốt toàn
+# bộ RAM của VPS. Có thể tăng build arg khi ứng dụng lớn lên, nhưng không nên bỏ giới hạn trên host
+# đang đồng thời chạy production workload.
+ARG NEXT_BUILD_MEMORY_MB=768
+ENV NODE_OPTIONS=--max-old-space-size=${NEXT_BUILD_MEMORY_MB}
+
 # Dokploy có thể truyền Git SHA/release id vào build arg này để Next.js chống version skew.
 ARG NEXT_DEPLOYMENT_ID
 
-RUN npm run build
+# Cache compiler giữa các lần deploy. Cache chỉ tăng tốc build, không được đưa vào runtime image.
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # --- Runner ------------------------------------------------------------------
 FROM base AS runner
