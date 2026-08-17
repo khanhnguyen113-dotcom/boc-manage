@@ -256,8 +256,34 @@ function appwriteUsers(): Users {
     new Client()
       .setEndpoint(e.APPWRITE_ENDPOINT!)
       .setProject(e.APPWRITE_PROJECT_ID!)
-      .setKey(e.APPWRITE_SERVER_API_KEY!),
+      .setKey(e.APPWRITE_API_KEY_AUTH!),
   );
+}
+
+function normalizeAppwriteUserError(error: unknown, stage: 'auth' | 'data'): unknown {
+  const detail = error as { code?: number; type?: string };
+  if (typeof detail.code !== 'number') return error;
+  if (detail.code === 404 && stage === 'auth') {
+    return notFound('Tài khoản không còn tồn tại trong Appwrite Auth. Hãy đồng bộ lại tài khoản.');
+  }
+  if (detail.code === 409) {
+    return validation('Email này đã được sử dụng bởi tài khoản khác trong Appwrite Auth.');
+  }
+  if (detail.code === 400) {
+    return validation(
+      stage === 'auth'
+        ? 'Appwrite từ chối thông tin tài khoản hoặc mật khẩu. Hãy kiểm tra định dạng rồi thử lại.'
+        : 'Appwrite từ chối dữ liệu hồ sơ, vai trò hoặc phạm vi vừa nhập.',
+    );
+  }
+  if (detail.code === 401 || detail.code === 403) {
+    return forbidden(
+      stage === 'auth'
+        ? 'APPWRITE_API_KEY_AUTH chưa có quyền users.write để sửa tài khoản.'
+        : 'APPWRITE_API_KEY_DATA chưa có quyền ghi bảng dữ liệu người dùng.',
+    );
+  }
+  return error;
 }
 
 function assertSuperAdmin(actor: SessionUser): void {
@@ -292,18 +318,26 @@ export async function updateUserAccount(actor: SessionUser, input: UpdateUserInp
   const scopeType = privileged ? 'ALL' : input.scope_type;
   const scopeUnitId = scopeType === 'UNIT' ? input.scope_unit_id : null;
   let authTouched = false;
+  let mutationStage: 'auth' | 'data' = 'auth';
 
   try {
     if (env().DATA_DRIVER === 'appwrite') {
       const auth = appwriteUsers();
-      await auth.updateName({ userId: input.user_id, name: input.full_name });
-      authTouched = true;
+      if (input.full_name !== current.profile.full_name) {
+        await auth.updateName({ userId: input.user_id, name: input.full_name });
+        authTouched = true;
+      }
       if (input.email !== current.profile.email) {
         await auth.updateEmail({ userId: input.user_id, email: input.email });
+        authTouched = true;
       }
-      await auth.updateStatus({ userId: input.user_id, status: input.status === 'ACTIVE' });
+      if ((input.status === 'ACTIVE') !== (current.profile.status === 'ACTIVE')) {
+        await auth.updateStatus({ userId: input.user_id, status: input.status === 'ACTIVE' });
+        authTouched = true;
+      }
     }
 
+    mutationStage = 'data';
     await store.transaction(async (tx) => {
       await tx.update('profiles', current.profile.id, {
         full_name: input.full_name,
@@ -347,7 +381,7 @@ export async function updateUserAccount(actor: SessionUser, input: UpdateUserInp
         // Best-effort bù trừ Appwrite Auth; lỗi gốc vẫn được trả về.
       }
     }
-    throw error;
+    throw normalizeAppwriteUserError(error, mutationStage);
   }
 
   await recordAudit({
@@ -365,15 +399,29 @@ export async function changeUserPassword(
   actor: SessionUser,
   userId: string,
   password: string,
-): Promise<void> {
+): Promise<{ sessionsRevoked: boolean }> {
   assertSuperAdmin(actor);
   const current = await getUserAdminRecord(userId);
   if (!current) throw notFound('Không tìm thấy tài khoản cần đổi mật khẩu.');
 
+  let sessionsRevoked = true;
   if (env().DATA_DRIVER === 'appwrite') {
     const auth = appwriteUsers();
-    await auth.updatePassword({ userId, password });
-    await auth.deleteSessions({ userId });
+    try {
+      await auth.updatePassword({ userId, password });
+    } catch (error) {
+      throw normalizeAppwriteUserError(error, 'auth');
+    }
+    try {
+      await auth.deleteSessions({ userId });
+    } catch (error) {
+      sessionsRevoked = false;
+      const detail = error as { code?: number; type?: string };
+      console.warn('[user.password.change] Không thể thu hồi phiên Appwrite', {
+        code: detail.code,
+        type: detail.type,
+      });
+    }
   } else {
     const store = await getStore();
     await store.update('profiles', current.profile.id, { password_hash: hashPassword(password) } as never);
@@ -384,9 +432,10 @@ export async function changeUserPassword(
     action: 'user.password.change',
     entityType: 'user',
     entityId: userId,
-    after: { password: '[redacted]', sessions_revoked: true },
+    after: { password: '[redacted]', sessions_revoked: sessionsRevoked },
     changedFields: ['password', 'sessions'],
   });
+  return { sessionsRevoked };
 }
 
 const USER_REFERENCE_CHECKS: {

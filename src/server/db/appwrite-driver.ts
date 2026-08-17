@@ -35,7 +35,7 @@ function createClient(): Client {
   return new Client()
     .setEndpoint(e.APPWRITE_ENDPOINT!)
     .setProject(e.APPWRITE_PROJECT_ID!)
-    .setKey(e.APPWRITE_SERVER_API_KEY!);
+    .setKey(e.APPWRITE_API_KEY_DATA!);
 }
 
 /** Appwrite trả về `$id`/`$createdAt`/`$updatedAt`; domain dùng `id`/`created_at`/`updated_at`. */

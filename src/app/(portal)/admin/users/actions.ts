@@ -111,8 +111,13 @@ export async function changeUserPasswordAction(
   if (!parsed.success) return issuesToState(parsed.error.issues);
 
   try {
-    await changeUserPassword(actor, parsed.data.user_id, parsed.data.password);
-    return { error: null, success: 'Đã đổi mật khẩu và đăng xuất toàn bộ phiên của tài khoản.' };
+    const result = await changeUserPassword(actor, parsed.data.user_id, parsed.data.password);
+    return {
+      error: null,
+      success: result.sessionsRevoked
+        ? 'Đã đổi mật khẩu và đăng xuất toàn bộ phiên của tài khoản.'
+        : 'Đã đổi mật khẩu. Appwrite chưa thu hồi được các phiên cũ; hãy yêu cầu người dùng đăng xuất thủ công.',
+    };
   } catch (error) {
     return { error: toActionResult(error).message, success: null };
   }

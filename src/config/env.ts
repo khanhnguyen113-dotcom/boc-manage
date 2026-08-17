@@ -34,6 +34,8 @@ const schema = z.object({
   APPWRITE_PROJECT_ID: z.string().optional(),
   APPWRITE_DATABASE_ID: z.string().default('boc_control_tower'),
   APPWRITE_SERVER_API_KEY: z.string().optional(),
+  APPWRITE_API_KEY_AUTH: z.string().optional(),
+  APPWRITE_API_KEY_DATA: z.string().optional(),
   APPWRITE_BUCKET_ATTACHMENTS: z.string().default('boc_attachments'),
   APPWRITE_BUCKET_EXPORTS: z.string().default('boc_exports'),
   APPWRITE_BUCKET_IMPORTS: z.string().default('boc_imports'),
@@ -61,15 +63,17 @@ let cached: AppEnv | null = null;
 export function env(): AppEnv {
   if (cached) return cached;
 
-  // Dokploy commonly exposes a single Appwrite key as APPWRITE_API_KEY. Keep
-  // APPWRITE_SERVER_API_KEY canonical inside the application, but accept that
-  // platform alias at the process boundary.
+  // Hỗ trợ cả một server key dùng chung và hai key tách quyền trên Dokploy.
+  // Key tách quyền luôn được ưu tiên để thao tác Auth không vô tình dùng data-only key.
+  const sharedAppwriteKey =
+    process.env.APPWRITE_SERVER_API_KEY?.trim() ||
+    process.env.APPWRITE_API_KEY?.trim() ||
+    undefined;
   const runtimeEnv = {
     ...process.env,
-    APPWRITE_SERVER_API_KEY:
-      process.env.APPWRITE_SERVER_API_KEY?.trim() ||
-      process.env.APPWRITE_API_KEY?.trim() ||
-      undefined,
+    APPWRITE_SERVER_API_KEY: sharedAppwriteKey,
+    APPWRITE_API_KEY_AUTH: process.env.APPWRITE_API_KEY_AUTH?.trim() || sharedAppwriteKey,
+    APPWRITE_API_KEY_DATA: process.env.APPWRITE_API_KEY_DATA?.trim() || sharedAppwriteKey,
   };
 
   const parsed = schema.safeParse(runtimeEnv);
@@ -91,7 +95,7 @@ export function env(): AppEnv {
 
   if (value.DATA_DRIVER === 'appwrite') {
     const missing = (
-      ['APPWRITE_ENDPOINT', 'APPWRITE_PROJECT_ID', 'APPWRITE_SERVER_API_KEY'] as const
+      ['APPWRITE_ENDPOINT', 'APPWRITE_PROJECT_ID', 'APPWRITE_API_KEY_AUTH', 'APPWRITE_API_KEY_DATA'] as const
     ).filter((key) => !value[key]);
     if (missing.length > 0) {
       throw new Error(`DATA_DRIVER=appwrite nhưng thiếu: ${missing.join(', ')}.`);
