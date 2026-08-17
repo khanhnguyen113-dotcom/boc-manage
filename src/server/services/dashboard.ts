@@ -73,11 +73,13 @@ export async function getPeriodReport(
   user: SessionUser,
   kind: PeriodKind,
   custom?: DateRange,
+  filters: { unitId?: string } = {},
 ): Promise<{ report: PeriodReport; period: DateRange }> {
   const ctx = await getBocContext();
   const period = resolvePeriod(kind, ctx.today, custom);
 
-  const items = await listWorkItemsInScope(user.scope);
+  let items = await listWorkItemsInScope(user.scope);
+  if (filters.unitId) items = items.filter((item) => item.owning_unit_id === filters.unitId);
   const logs = await listExecutionLogsFor(items.map((i) => i.id));
 
   return { report: computePeriodReport(items, logs, period, ctx.metrics), period };

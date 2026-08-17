@@ -21,7 +21,7 @@ import { requireUser } from '@/server/auth/current-user';
 import { getWorkloadSnapshot } from '@/server/services/dashboard';
 import { getBocContext } from '@/server/services/context';
 
-export const metadata: Metadata = { title: 'Nguồn lực' };
+export const metadata: Metadata = { title: 'Sức Tải' };
 
 const TONE_BY_STATE: Record<string, ChartTone> = {
   OVER_CAPACITY: 'danger',
@@ -50,7 +50,7 @@ export default async function WorkloadPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Nguồn lực & tải công việc"
+        title="Sức Tải công việc"
         description={
           <>
             Khoảng đánh giá {formatDateRange(range)}. Tải quy đổi theo công thức:{' '}

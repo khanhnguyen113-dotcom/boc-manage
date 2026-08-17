@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { Badge, Card, CardHeader, PageHeader } from '@/components/ui/primitives';
+import { Alert, Badge, ButtonLink, Card, CardHeader, PageHeader } from '@/components/ui/primitives';
 import { TableShell, Td, Th, Tr } from '@/components/ui/table';
 import { ROLE_LABELS } from '@/domain/catalogs';
 import { ROLE_BASELINE } from '@/domain/permissions';
@@ -13,10 +13,16 @@ import { CreateUserForm } from './create-user-form';
 
 export const metadata: Metadata = { title: 'Người dùng & phân quyền' };
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deleted?: string }>;
+}) {
   const currentUser = await requireCapability('user.manage');
+  const params = await searchParams;
 
   const [profiles, roles, units] = await Promise.all([listProfiles(), listUserRoles(), unitMap()]);
+  const canAdminister = currentUser.actor.roles.includes('system_admin');
 
   return (
     <div className="space-y-5">
@@ -25,16 +31,20 @@ export default async function AdminUsersPage() {
         description="Vai trò quyết định capability; phạm vi dữ liệu quyết định người đó nhìn thấy bản ghi nào. Hai thứ này độc lập nhau."
       />
 
-      <Card>
-        <CardHeader
-          title="Tạo người dùng mới"
-          description="Tài khoản được tạo đồng thời trong Appwrite Auth và dữ liệu phân quyền của BOC. Super admin có thể tạo mọi vai trò."
-        />
-        <CreateUserForm
-          units={[...units.values()].map((unit) => ({ value: unit.id, label: unit.name }))}
-          canManagePrivileged={currentUser.capabilities.has('permission.manage')}
-        />
-      </Card>
+      {params.deleted === '1' ? <Alert tone="info" title="Đã xóa tài khoản thành công" /> : null}
+
+      {canAdminister ? (
+        <Card>
+          <CardHeader
+            title="Tạo người dùng mới"
+            description="Tài khoản được tạo đồng thời trong Appwrite Auth và dữ liệu phân quyền của BOC. Super admin có thể tạo mọi vai trò."
+          />
+          <CreateUserForm
+            units={[...units.values()].map((unit) => ({ value: unit.id, label: unit.name }))}
+            canManagePrivileged
+          />
+        </Card>
+      ) : null}
 
       <Card className="overflow-hidden">
         <CardHeader
@@ -51,6 +61,7 @@ export default async function AdminUsersPage() {
               <Th align="right">Công suất</Th>
               <Th>Trạng thái</Th>
               <Th>Truy cập gần nhất</Th>
+              {canAdminister ? <Th>Quản lý</Th> : null}
             </tr>
           </thead>
           <tbody>
@@ -103,6 +114,13 @@ export default async function AdminUsersPage() {
                   <Td className="text-xs text-[var(--text-muted)]">
                     {formatDateTime(profile.last_seen_at)}
                   </Td>
+                  {canAdminister ? (
+                    <Td>
+                      <ButtonLink href={`/admin/users/${profile.user_id}`} variant="ghost" size="sm">
+                        Sửa / mật khẩu
+                      </ButtonLink>
+                    </Td>
+                  ) : null}
                 </Tr>
               );
             })}

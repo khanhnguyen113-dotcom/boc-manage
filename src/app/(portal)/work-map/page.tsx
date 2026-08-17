@@ -2,14 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { GitBranch } from 'lucide-react';
 
-import { DataQualityBadge, LevelBadge, PriorityBadge, StatusBadge } from '@/components/ui/badges';
+import { LevelBadge } from '@/components/ui/badges';
 import { Alert, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui/primitives';
-import { ProgressBar } from '@/components/ui/progress';
-import { formatDate } from '@/domain/business-days';
-import { isOverdue } from '@/domain/dates';
+import { deadlineDaysAway } from '@/domain/business-days';
 import { buildTreeIndex, type TreeIndex } from '@/domain/hierarchy';
 import type { WorkItem } from '@/domain/types';
-import { formatHours, formatInteger } from '@/lib/format';
+import { cn } from '@/lib/cn';
+import { formatInteger } from '@/lib/format';
 import { requireUser } from '@/server/auth/current-user';
 import { listWorkItemsInScope } from '@/server/repositories/work-items';
 import { getBocContext } from '@/server/services/context';
@@ -108,7 +107,23 @@ function TreeNode({
   canCreateWork: boolean;
 }) {
   const children = (tree.childrenOf.get(node.id) ?? []).filter((c) => !c.is_archived);
-  const overdue = isOverdue(node, ctx.today);
+  const daysLeft = deadlineDaysAway(ctx.today, node.display_end, ctx.calendar);
+  const deadlineLabel =
+    daysLeft === null
+      ? 'Chưa có hạn'
+      : daysLeft < 0
+        ? `Quá hạn ${Math.abs(daysLeft)} ngày`
+        : daysLeft === 0
+          ? 'Đến hạn hôm nay'
+          : `Còn ${daysLeft} ngày`;
+  const titleClass =
+    depth === 0
+      ? 'text-base font-semibold'
+      : depth === 1
+        ? 'text-sm font-semibold'
+        : depth === 2
+          ? 'text-sm font-medium'
+          : 'text-xs font-normal text-[var(--text-muted)]';
 
   const summary = (
     <div
@@ -119,11 +134,10 @@ function TreeNode({
 
       <Link
         href={`/work-items/${node.id}`}
-        className="min-w-0 flex-1 truncate text-sm hover:underline"
+        className={cn('min-w-0 flex-1 truncate hover:underline', titleClass)}
         title={node.title}
       >
-        <span className="font-mono text-[11px] text-[var(--text-subtle)]">{node.code}</span>{' '}
-        <span className={depth === 0 ? 'font-medium' : ''}>{node.title}</span>
+        {node.title}
       </Link>
 
       {canCreateWork ? (
@@ -136,37 +150,17 @@ function TreeNode({
         </Link>
       ) : null}
 
-      <span className="hidden w-32 shrink-0 md:block">
-        <ProgressBar value={node.effective_progress} size="sm" />
-      </span>
-
-      <span className="hidden shrink-0 text-[11px] text-[var(--text-muted)] lg:block">
-        {ctx.names.userName(node.primary_assignee_id)}
-      </span>
-
       <span
-        className={
-          overdue
-            ? 'hidden w-24 shrink-0 text-right text-[11px] text-[var(--tone-danger-text)] sm:block'
-            : 'hidden w-24 shrink-0 text-right text-[11px] text-[var(--text-muted)] sm:block'
-        }
+        className={cn(
+          'shrink-0 text-right text-[11px] font-medium',
+          daysLeft !== null && daysLeft <= 0
+            ? 'text-[var(--tone-danger-text)]'
+            : daysLeft !== null && daysLeft <= 2
+              ? 'text-[var(--tone-warning-text)]'
+              : 'text-[var(--text-muted)]',
+        )}
       >
-        {formatDate(node.display_end)}
-      </span>
-
-      <span className="hidden w-16 shrink-0 text-right text-[11px] text-[var(--text-muted)] xl:block">
-        {formatHours(node.effective_estimated_hours)}
-      </span>
-
-      <span className="flex shrink-0 items-center gap-1.5">
-        <PriorityBadge priority={node.priority} />
-        <StatusBadge status={node.status} />
-        {node.data_quality_status !== 'VALID' ? (
-          <DataQualityBadge
-            status={node.data_quality_status}
-            codeCount={node.data_quality_codes.length}
-          />
-        ) : null}
+        {deadlineLabel}
       </span>
     </div>
   );

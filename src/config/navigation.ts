@@ -67,15 +67,8 @@ export const MAIN_NAV: NavItem[] = [
     description: 'Bảng dữ liệu đầy đủ, lọc và tìm kiếm',
   },
   {
-    href: '/calendar',
-    label: 'Lịch & deadline',
-    icon: 'CalendarDays',
-    capability: 'work.view',
-    description: 'Mốc bắt đầu, hạn hoàn thành và ngày rà soát',
-  },
-  {
     href: '/workload',
-    label: 'Nguồn lực',
+    label: 'Sức Tải',
     icon: 'Users2',
     capability: 'work.view',
     description: 'Tải theo người, công suất và giờ tồn',
@@ -94,6 +87,13 @@ export const MAIN_NAV: NavItem[] = [
     icon: 'Bell',
     capability: 'portal.access',
     description: 'Giao việc, deadline, mention và thay đổi quan trọng',
+  },
+  {
+    href: '/calendar',
+    label: 'Lịch & deadline',
+    icon: 'CalendarDays',
+    capability: 'work.view',
+    description: 'Lịch hạn hoàn thành và ngày nghỉ',
   },
 ];
 

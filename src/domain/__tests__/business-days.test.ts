@@ -5,6 +5,7 @@ import {
   businessDaysLeft,
   countBusinessDays,
   createCalendar,
+  deadlineDaysAway,
   formatDate,
   MASK_MON_FRI,
   MASK_MON_SAT,
@@ -83,6 +84,17 @@ describe('businessDaysLeft', () => {
 
   it('trả null khi không có hạn', () => {
     expect(businessDaysLeft('2026-08-08', null, monSat)).toBeNull();
+  });
+});
+
+describe('deadlineDaysAway', () => {
+  it('coi đúng ngày đến hạn là 0 và ngày làm việc kế tiếp là 1', () => {
+    expect(deadlineDaysAway('2026-08-12', '2026-08-12', monSat)).toBe(0);
+    expect(deadlineDaysAway('2026-08-12', '2026-08-13', monSat)).toBe(1);
+  });
+
+  it('không tính ngày hiện tại vào ngưỡng cảnh báo', () => {
+    expect(deadlineDaysAway('2026-08-12', '2026-08-14', monSat)).toBe(2);
   });
 });
 

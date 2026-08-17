@@ -22,23 +22,26 @@ export async function GET(request: NextRequest) {
   const period = (['week', 'month', 'year'].includes(periodParam ?? '')
     ? periodParam
     : 'week') as PeriodKind;
+  const unitId = request.nextUrl.searchParams.get('unit') || undefined;
 
   const [{ period: range }, ctx, items] = await Promise.all([
-    getPeriodReport(user, period),
+    getPeriodReport(user, period, undefined, { unitId }),
     getBocContext(),
     listWorkItemsInScope(user.scope),
   ]);
 
   const relevant = items.filter(
     (item) =>
-      isWithin(item.completed_at, range) ||
-      (item.status !== 'COMPLETED' && item.status !== 'CANCELLED' && !item.is_archived),
+      (!unitId || item.owning_unit_id === unitId) &&
+      (isWithin(item.completed_at, range) ||
+        (item.status !== 'COMPLETED' && item.status !== 'CANCELLED' && !item.is_archived)),
   );
 
   const { buffer, filename } = await exportWorkItems(user, relevant, ctx, {
     report: period,
     from: range.start,
     to: range.end,
+    unit: unitId,
   });
 
   return new NextResponse(new Uint8Array(buffer), {

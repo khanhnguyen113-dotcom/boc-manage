@@ -2,8 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FileDown, ShieldCheck } from 'lucide-react';
 
+import { Select } from '@/components/ui/form';
+
 import {
   Alert,
+  Button,
   ButtonLink,
   Card,
   CardBody,
@@ -14,6 +17,7 @@ import {
 import { formatDateRange } from '@/domain/business-days';
 import { EMPTY, formatHours, formatInteger, formatPercent } from '@/lib/format';
 import { requireUser } from '@/server/auth/current-user';
+import { listUnits } from '@/server/repositories/catalogs';
 import { getPeriodReport, type PeriodKind } from '@/server/services/dashboard';
 
 export const metadata: Metadata = { title: 'Báo cáo' };
@@ -33,7 +37,7 @@ const PERIODS: { key: PeriodKind; label: string; description: string }[] = [
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; unit?: string }>;
 }) {
   const user = await requireUser();
   if (!user.capabilities.has('report.view')) {
@@ -44,9 +48,13 @@ export default async function ReportsPage({
     );
   }
 
-  const { period: periodParam } = await searchParams;
+  const { period: periodParam, unit: unitId } = await searchParams;
   const period = (PERIODS.find((p) => p.key === periodParam)?.key ?? 'week') as PeriodKind;
-  const { report, period: range } = await getPeriodReport(user, period);
+  const [{ report, period: range }, units] = await Promise.all([
+    getPeriodReport(user, period, undefined, { unitId }),
+    listUnits(),
+  ]);
+  const selectedUnit = units.find((unit) => unit.id === unitId);
 
   const canExport = user.capabilities.has('report.export');
 
@@ -54,14 +62,14 @@ export default async function ReportsPage({
     <div className="space-y-5">
       <PageHeader
         title="Báo cáo kết quả"
-        description={`Kỳ ${formatDateRange(range)}. Số liệu áp đúng phạm vi dữ liệu của bạn.`}
+        description={`Kỳ ${formatDateRange(range)}. ${selectedUnit ? `Đơn vị: ${selectedUnit.name}. ` : ''}Số liệu áp đúng phạm vi dữ liệu của bạn.`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <nav aria-label="Chọn kỳ báo cáo" className="flex rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-0.5">
               {PERIODS.map((p) => (
                 <Link
                   key={p.key}
-                  href={`/reports?period=${p.key}`}
+                  href={`/reports?period=${p.key}${unitId ? `&unit=${encodeURIComponent(unitId)}` : ''}`}
                   aria-current={p.key === period ? 'true' : undefined}
                   className={
                     p.key === period
@@ -75,7 +83,7 @@ export default async function ReportsPage({
             </nav>
             {canExport ? (
               <ButtonLink
-                href={`/api/exports/report?period=${period}`}
+                href={`/api/exports/report?period=${period}${unitId ? `&unit=${encodeURIComponent(unitId)}` : ''}`}
                 variant="secondary"
                 size="sm"
                 prefetch={false}
@@ -87,6 +95,23 @@ export default async function ReportsPage({
           </div>
         }
       />
+
+      <Card>
+        <form action="/reports" method="get" className="flex flex-wrap items-end gap-3 p-4">
+          <input type="hidden" name="period" value={period} />
+          <label className="min-w-64 flex-1 text-xs text-[var(--text-muted)]">
+            <span className="mb-1.5 block font-medium">Lọc báo cáo theo bộ phận</span>
+            <Select name="unit" defaultValue={unitId ?? ''}>
+              <option value="">Tất cả bộ phận trong phạm vi</option>
+              {units.filter((unit) => unit.is_active).map((unit) => (
+                <option key={unit.id} value={unit.id}>{unit.name}</option>
+              ))}
+            </Select>
+          </label>
+          <Button type="submit" variant="primary" size="sm">Áp dụng</Button>
+          {unitId ? <ButtonLink href={`/reports?period=${period}`} variant="ghost" size="sm">Xóa bộ lọc</ButtonLink> : null}
+        </form>
+      </Card>
 
       <Alert tone={report.conclusion.confident ? 'info' : 'warning'} title="Kết luận quản trị">
         {report.conclusion.text}

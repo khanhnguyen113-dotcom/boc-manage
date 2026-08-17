@@ -1,18 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CalendarDays, CalendarX } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 
-import { LevelBadge, PriorityBadge, StatusBadge } from '@/components/ui/badges';
-import { Alert, Badge, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui/primitives';
+import { ButtonLink, Card, CardHeader, PageHeader } from '@/components/ui/primitives';
 import {
   addDays,
   eachDay,
-  formatDate,
   isWorkingDay,
   monthRange,
   type DateRange,
 } from '@/domain/business-days';
-import { isOverdue } from '@/domain/dates';
 import type { WorkItem } from '@/domain/types';
 import { cn } from '@/lib/cn';
 import { requireUser } from '@/server/auth/current-user';
@@ -27,8 +24,7 @@ const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 /**
  * Lịch tháng — guideline 6.6.
  *
- * Hiển thị mốc **kết thúc** (deadline) vì đó là thứ cần can thiệp; ngày bắt đầu và ngày rà soát
- * xuất hiện ở danh sách bên phải. Ngày nghỉ được tô khác để người dùng hiểu vì sao “còn N ngày
+ * Hiển thị mốc **kết thúc** (deadline) vì đó là thứ cần can thiệp. Ngày nghỉ được tô khác để người dùng hiểu vì sao “còn N ngày
  * làm việc” không bằng số ngày lịch.
  */
 export default async function CalendarPage({
@@ -60,14 +56,6 @@ export default async function CalendarPage({
   );
   const holidayByDate = new Map(holidays.map((h) => [h.holiday_date, h]));
 
-  const overdueItems = active
-    .filter((i) => isOverdue(i, ctx.today))
-    .sort((a, b) => (a.display_end ?? '').localeCompare(b.display_end ?? ''));
-
-  const reviews = active
-    .filter((i) => i.review_date && i.review_date >= range.start && i.review_date <= range.end)
-    .sort((a, b) => (a.review_date ?? '').localeCompare(b.review_date ?? ''));
-
   const prevMonth = addDays(range.start, -1).slice(0, 7);
   const nextMonth = addDays(range.end, 1).slice(0, 7);
 
@@ -77,7 +65,7 @@ export default async function CalendarPage({
         title="Lịch & deadline"
         description="Mốc hạn hoàn thành theo ngày hiển thị. Ngày nghỉ được loại khỏi cách tính “còn bao nhiêu ngày làm việc”."
         actions={
-          <div className="flex items-center gap-1 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-0.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-0.5 text-xs">
             <Link href={`/calendar?month=${prevMonth}`} className="rounded px-2.5 py-1.5 hover:bg-[var(--surface-hover)]">
               ← Tháng trước
             </Link>
@@ -85,21 +73,16 @@ export default async function CalendarPage({
             <Link href={`/calendar?month=${nextMonth}`} className="rounded px-2.5 py-1.5 hover:bg-[var(--surface-hover)]">
               Tháng sau →
             </Link>
+            {user.capabilities.has('calendar.manage') ? (
+              <ButtonLink href="/admin/holidays" variant="ghost" size="sm">
+                Xem lịch nghỉ
+              </ButtonLink>
+            ) : null}
           </div>
         }
       />
 
-      {holidays.some((h) => !h.is_confirmed) ? (
-        <Alert tone="warning" title="Có ngày nghỉ chưa được HR xác nhận trong tháng này">
-          {holidays
-            .filter((h) => !h.is_confirmed)
-            .map((h) => `${formatDate(h.holiday_date)} — ${h.name}`)
-            .join('; ')}
-        </Alert>
-      ) : null}
-
-      <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <Card>
+      <Card>
           <CardHeader
             icon={CalendarDays}
             title="Hạn hoàn thành trong tháng"
@@ -184,64 +167,7 @@ export default async function CalendarPage({
               })}
             </div>
           </div>
-        </Card>
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader
-              icon={CalendarX}
-              title={
-                <span className="flex items-center gap-2">
-                  Đang quá hạn
-                  <Badge tone="danger">{overdueItems.length}</Badge>
-                </span>
-              }
-              description="Tính trên toàn phạm vi, không giới hạn trong tháng đang xem."
-            />
-            {overdueItems.length === 0 ? (
-              <EmptyState title="Không có việc quá hạn" />
-            ) : (
-              <ul className="max-h-96 divide-y divide-[var(--border)] overflow-y-auto">
-                {overdueItems.slice(0, 20).map((item) => (
-                  <li key={item.id} className="px-4 py-2.5">
-                    <Link href={`/work-items/${item.id}`} className="flex items-start gap-2">
-                      <LevelBadge level={item.level} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm hover:underline">{item.title}</span>
-                        <span className="text-[11px] text-[var(--tone-danger-text)]">
-                          Hạn {formatDate(item.display_end)}
-                        </span>
-                      </span>
-                      <PriorityBadge priority={item.priority} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <Card>
-            <CardHeader title="Ngày rà soát trong tháng" />
-            {reviews.length === 0 ? (
-              <EmptyState title="Không có mốc rà soát" />
-            ) : (
-              <ul className="divide-y divide-[var(--border)]">
-                {reviews.map((item) => (
-                  <li key={item.id} className="flex items-center gap-2 px-4 py-2.5 text-sm">
-                    <span className="tabular w-20 shrink-0 text-[11px] text-[var(--text-muted)]">
-                      {formatDate(item.review_date)}
-                    </span>
-                    <Link href={`/work-items/${item.id}`} className="min-w-0 flex-1 truncate hover:underline">
-                      {item.title}
-                    </Link>
-                    <StatusBadge status={item.status} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -47,43 +47,44 @@ describe('KPI Control Tower', () => {
   const snapshot = computeControlTower(items, august, ctx, labels);
   const kpi = (key: string) => snapshot.kpis.find((k) => k.key === key)!;
 
-  it('không tính việc hủy/lưu trữ vào node đang hoạt động', () => {
-    expect(kpi('active_nodes').value).toBe(4);
-    expect(kpi('active_nodes').excluded_count).toBe(2);
+  it('không tính việc hủy/lưu trữ vào tổng điểm cuối', () => {
+    expect(kpi('active_leaves').value).toBe(4);
+    expect(kpi('active_leaves').excluded_count).toBe(0);
   });
 
-  it('đếm đúng quá hạn và sắp đến hạn', () => {
+  it('đếm đúng quá hạn và các ngưỡng sắp đến hạn không chồng lặp', () => {
     expect(kpi('overdue').value).toBe(1);
-    expect(kpi('near_due').value).toBe(1);
+    expect(kpi('due_1_2').value).toBe(1);
+    expect(kpi('due_today').value).toBe(0);
+    expect(kpi('due_3_7').value).toBe(0);
   });
 
-  it('đếm P1 đang mở, không tính việc đã hoàn thành', () => {
+  it('đếm riêng P1 và P2 đang mở, không tính việc đã hoàn thành', () => {
     expect(kpi('p1_active').value).toBe(1);
+    expect(kpi('p2_active').value).toBe(1);
   });
 
   it('hoàn thành trong kỳ theo ngày thực tế', () => {
     expect(kpi('completed_period').value).toBe(1);
   });
 
-  it('tỷ lệ đúng hạn kèm mẫu số truy vết được', () => {
-    const onTime = kpi('on_time_rate');
-    expect(onTime.value).toBe(100);
-    expect(onTime.eligible_count).toBe(1);
-    expect(onTime.hint).toContain('Mẫu số = 1');
-  });
-
   it('mọi KPI đều có link drill-down', () => {
     for (const k of snapshot.kpis) expect(k.drilldown.length).toBeGreaterThan(0);
   });
 
-  it('tỷ lệ đúng hạn trả null khi không có việc hoàn thành nào — không hiện 0%', () => {
-    const empty = computeControlTower(
-      [makeWorkItem({ id: 'x' })],
-      august,
-      ctx,
-      labels,
+  it('chỉ trả tối đa 5 việc cần can thiệp và 5 link kết quả mới nhất', () => {
+    const many = Array.from({ length: 7 }, (_, index) =>
+      makeWorkItem({
+        id: `today-${index}`,
+        display_end: '2026-08-12',
+        result_link: `https://example.com/${index}`,
+        updated_at: `2026-08-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
+      }),
     );
-    expect(empty.kpis.find((k) => k.key === 'on_time_rate')!.value).toBeNull();
+    const limited = computeControlTower(many, august, ctx, labels);
+    expect(limited.interventions).toHaveLength(5);
+    expect(limited.recent_results).toHaveLength(5);
+    expect(limited.recent_results[0].work_item_id).toBe('today-6');
   });
 });
 
@@ -91,7 +92,9 @@ describe('nhịp deadline', () => {
   it('phân đúng nhóm', () => {
     const items = [
       makeWorkItem({ display_end: '2026-08-01' }), // quá hạn
-      makeWorkItem({ display_end: '2026-08-14' }), // 0–7 ngày làm việc
+      makeWorkItem({ display_end: '2026-08-12' }), // hôm nay
+      makeWorkItem({ display_end: '2026-08-14' }), // 1–2 ngày làm việc
+      makeWorkItem({ display_end: '2026-08-17' }), // 3–7 ngày làm việc
       makeWorkItem({ display_end: '2026-09-10' }), // 8–30
       makeWorkItem({ display_end: '2026-12-31' }), // > 30
       makeWorkItem({ schedule_type: 'UNSCHEDULED', display_end: null }),
@@ -99,7 +102,9 @@ describe('nhịp deadline', () => {
     ];
     const buckets = computeDeadlineBuckets(items, ctx);
     expect(buckets.overdue).toBe(1);
-    expect(buckets.due_0_7).toBe(1);
+    expect(buckets.due_today).toBe(1);
+    expect(buckets.due_1_2).toBe(1);
+    expect(buckets.due_3_7).toBe(1);
     expect(buckets.due_8_30).toBe(1);
     expect(buckets.due_over_30).toBe(1);
     expect(buckets.no_deadline).toBe(1);
@@ -108,9 +113,9 @@ describe('nhịp deadline', () => {
 });
 
 describe('xếp hạng việc cần can thiệp', () => {
-  it('P1 quá hạn đứng trên P3 sắp đến hạn', () => {
+  it('P1 quá hạn đứng trên P3 đến hạn hôm nay', () => {
     const items = [
-      makeWorkItem({ id: 'nhe', priority: 'P3', display_end: '2026-08-17' }),
+      makeWorkItem({ id: 'nhe', priority: 'P3', display_end: '2026-08-12' }),
       makeWorkItem({ id: 'nang', priority: 'P1', display_end: '2026-08-03' }),
     ];
     const ranked = rankInterventions(items, ctx);
@@ -119,14 +124,14 @@ describe('xếp hạng việc cần can thiệp', () => {
     expect(ranked[0].reasons).toContain('Ưu tiên P1');
   });
 
-  it('điểm cuối chưa có người thực hiện cũng được nêu', () => {
-    const items = [makeWorkItem({ primary_assignee_id: null, display_end: '2026-12-31' })];
+  it('việc đến hạn hôm nay chưa có người thực hiện vẫn được nêu', () => {
+    const items = [makeWorkItem({ primary_assignee_id: null, display_end: '2026-08-12' })];
     expect(rankInterventions(items, ctx)[0].reasons).toContain('Chưa có người thực hiện');
   });
 
-  it('việc bình thường không xuất hiện trong danh sách can thiệp', () => {
+  it('việc chưa đến hạn hôm nay không xuất hiện dù thiếu dữ liệu hoặc người thực hiện', () => {
     const items = [
-      makeWorkItem({ priority: 'P3', display_end: '2026-12-31', data_quality_status: 'VALID' }),
+      makeWorkItem({ priority: 'P1', primary_assignee_id: null, display_end: '2026-12-31', data_quality_status: 'INVALID' }),
     ];
     expect(rankInterventions(items, ctx)).toEqual([]);
   });

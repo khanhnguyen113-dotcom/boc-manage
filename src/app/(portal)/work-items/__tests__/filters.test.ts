@@ -31,8 +31,8 @@ describe('parseFilters', () => {
     expect(parseFilters({ level: '4,5' }).query.level).toEqual([4, 5]);
   });
 
-  it('bỏ qua cấp không hợp lệ', () => {
-    expect(parseFilters({ level: '9' }).query.level).toEqual([]);
+  it('bỏ qua cấp dưới L3 nhưng chấp nhận lớp sâu hơn L6', () => {
+    expect(parseFilters({ level: '2,9' }).query.level).toEqual([9]);
   });
 
   it('mặc định sắp xếp theo mã, tăng dần', () => {
@@ -59,6 +59,16 @@ describe('buildDerivedFilter', () => {
     // 12/08 → 20/08 là 8 ngày lịch nhưng chỉ 8 ngày làm việc kể cả hai đầu ⇒ vượt ngưỡng 7.
     expect(predicate(makeWorkItem({ display_end: '2026-08-20' }))).toBe(false);
     expect(predicate(makeWorkItem({ display_end: '2026-08-15' }))).toBe(true);
+  });
+
+  it('tách riêng deadline hôm nay, 1–2 ngày và 3–7 ngày', () => {
+    const today = filterFor({ warning: 'due_today' })!;
+    const twoDays = filterFor({ warning: 'due_2' })!;
+    const sevenDays = filterFor({ warning: 'due_7' })!;
+    expect(today(makeWorkItem({ display_end: '2026-08-12' }))).toBe(true);
+    expect(twoDays(makeWorkItem({ display_end: '2026-08-14' }))).toBe(true);
+    expect(sevenDays(makeWorkItem({ display_end: '2026-08-17' }))).toBe(true);
+    expect(twoDays(makeWorkItem({ display_end: '2026-08-17' }))).toBe(false);
   });
 
   it('warning=missing_assignee chỉ tính điểm cuối', () => {

@@ -29,3 +29,28 @@ export const createUserSchema = z
   });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+export const updateUserSchema = createUserSchema
+  .omit({ password: true })
+  .extend({
+    user_id: z.string().min(1),
+    status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']),
+  });
+
+export const changeUserPasswordSchema = z
+  .object({
+    user_id: z.string().min(1),
+    password: z.string().min(8, 'Mật khẩu tối thiểu 8 ký tự').max(128),
+    password_confirm: z.string().min(8),
+  })
+  .refine((value) => value.password === value.password_confirm, {
+    path: ['password_confirm'],
+    message: 'Mật khẩu xác nhận không khớp',
+  });
+
+export const deleteUserSchema = z.object({
+  user_id: z.string().min(1),
+  confirmation: z.literal('XOA', { message: 'Nhập XOA để xác nhận xóa vĩnh viễn' }),
+});
+
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;

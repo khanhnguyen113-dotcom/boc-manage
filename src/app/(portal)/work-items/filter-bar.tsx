@@ -126,6 +126,9 @@ export function FilterBar({
           onChange={(v) => setParam('warning', v)}
           options={[
             { value: 'overdue', label: 'Quá hạn' },
+            { value: 'due_today', label: 'Đến hạn hôm nay' },
+            { value: 'due_2', label: 'Còn 1–2 ngày' },
+            { value: 'due_7', label: 'Còn 3–7 ngày' },
             { value: 'near_due', label: 'Sắp đến hạn' },
             { value: 'missing_assignee', label: 'Chưa có người thực hiện' },
             { value: 'no_deadline', label: 'Chưa có hạn' },

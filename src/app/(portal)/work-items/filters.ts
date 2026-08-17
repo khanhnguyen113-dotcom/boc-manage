@@ -1,4 +1,4 @@
-import { businessDaysLeft, type BusinessCalendar } from '@/domain/business-days';
+import { businessDaysLeft, deadlineDaysAway, type BusinessCalendar } from '@/domain/business-days';
 import { isOverdue } from '@/domain/dates';
 import type {
   BusinessDate,
@@ -33,7 +33,15 @@ function list(value: string | string[] | undefined): string[] {
 }
 
 /** Bí danh gọn cho các link drill-down từ dashboard. */
-export type WarningFilter = 'overdue' | 'near_due' | 'missing_assignee' | 'no_deadline' | undefined;
+export type WarningFilter =
+  | 'overdue'
+  | 'near_due'
+  | 'due_7'
+  | 'due_2'
+  | 'due_today'
+  | 'missing_assignee'
+  | 'no_deadline'
+  | undefined;
 
 export interface ParsedFilters {
   query: WorkItemQuery;
@@ -54,7 +62,7 @@ export function parseFilters(params: SearchParams): ParsedFilters {
 
   const query: WorkItemQuery = {
     search: first(params.q),
-    level: list(params.level).map(Number).filter((n) => n >= 3 && n <= 6) as WorkLevel[],
+    level: list(params.level).map(Number).filter((n) => Number.isInteger(n) && n >= 3) as WorkLevel[],
     status: explicitStatuses,
     priority: list(params.priority) as Priority[],
     scheduleType: list(params.schedule) as ScheduleType[],
@@ -68,6 +76,7 @@ export function parseFilters(params: SearchParams): ParsedFilters {
     parentId: first(params.parent),
     rootId: first(params.root),
     onlyLeaf: first(params.leaf) === '1',
+    hasResult: first(params.result) === '1',
     includeArchived: first(params.archived) === '1',
     page: Number(first(params.page) ?? 1) || 1,
     pageSize: Number(first(params.pageSize) ?? DEFAULT_PAGE_SIZE) || DEFAULT_PAGE_SIZE,
@@ -116,6 +125,26 @@ export function buildDerivedFilter(
         if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
         const left = businessDaysLeft(ctx.today, item.display_end, ctx.calendar);
         return left !== null && left >= 0 && left <= ctx.deadlineWarningDays;
+      });
+      break;
+    case 'due_7':
+      predicates.push((item) => {
+        if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
+        const left = deadlineDaysAway(ctx.today, item.display_end, ctx.calendar);
+        return left !== null && left >= 3 && left <= 7;
+      });
+      break;
+    case 'due_2':
+      predicates.push((item) => {
+        if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
+        const left = deadlineDaysAway(ctx.today, item.display_end, ctx.calendar);
+        return left !== null && left >= 1 && left <= 2;
+      });
+      break;
+    case 'due_today':
+      predicates.push((item) => {
+        if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
+        return deadlineDaysAway(ctx.today, item.display_end, ctx.calendar) === 0;
       });
       break;
     case 'missing_assignee':

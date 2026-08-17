@@ -11,6 +11,7 @@
 
 import {
   businessDaysLeft,
+  deadlineDaysAway,
   isWithin,
   type BusinessCalendar,
   type DateRange,
@@ -18,7 +19,7 @@ import {
 import { CLOSED_STATUSES } from './catalogs';
 import { completedOnTime, isOverdue } from './dates';
 import { summarizeExecutionLogs, type ExecutionSummary } from './execution';
-import { averageProgress, remainingHours, type ProgressContext } from './progress';
+import { averageProgress, type ProgressContext } from './progress';
 import { tallyDataQuality } from './data-quality';
 import type {
   BusinessDate,
@@ -78,7 +79,9 @@ export function isOpen(item: WorkItem): boolean {
 
 export interface DeadlineBuckets {
   overdue: number;
-  due_0_7: number;
+  due_today: number;
+  due_1_2: number;
+  due_3_7: number;
   due_8_30: number;
   due_over_30: number;
   no_deadline: number;
@@ -93,6 +96,16 @@ export interface Breakdown {
   overdue: number;
   progress: number | null;
   progress_eligible: number;
+  data_completeness: number | null;
+}
+
+export interface RecentResult {
+  work_item_id: string;
+  title: string;
+  result_link: string;
+  assignee_id: string | null;
+  completed_at: BusinessDate | null;
+  updated_at: string;
 }
 
 export interface InterventionItem {
@@ -124,6 +137,7 @@ export interface ControlTowerSnapshot {
   by_category: Breakdown[];
   by_unit: Breakdown[];
   by_assignee: Breakdown[];
+  recent_results: RecentResult[];
   data_health: ReturnType<typeof tallyDataQuality>;
 }
 
@@ -150,34 +164,28 @@ export function computeControlTower(
     return left !== null && left >= 0 && left <= ctx.deadlineWarningDays;
   });
 
+  const daysLeftOf = (item: WorkItem) =>
+    item.schedule_type === 'DEADLINE'
+      ? deadlineDaysAway(ctx.today, item.display_end ?? item.planned_end, ctx.calendar)
+      : null;
+  const dueToday = open.filter((item) => daysLeftOf(item) === 0);
+  const dueInTwoDays = open.filter((item) => {
+    const left = daysLeftOf(item);
+    return left !== null && left >= 1 && left <= 2;
+  });
+  const dueInSevenDays = open.filter((item) => {
+    const left = daysLeftOf(item);
+    return left !== null && left >= 3 && left <= 7;
+  });
+
   const completedInPeriod = items.filter(
     (i) => i.status === 'COMPLETED' && isWithin(i.completed_at, period),
   );
 
-  const onTimeEvaluable = completedInPeriod
-    .map((i) => ({ item: i, onTime: completedOnTime(i) }))
-    .filter((r): r is { item: WorkItem; onTime: boolean } => r.onTime !== null);
-  const onTimeCount = onTimeEvaluable.filter((r) => r.onTime).length;
-
-  const progressResult = averageProgress(activeLeaves, ctx.progress);
-
-  const remaining = activeLeaves.reduce((sum, item) => {
-    const h = remainingHours(item);
-    return h === null ? sum : sum + h;
-  }, 0);
-  const remainingEligible = activeLeaves.filter((i) => remainingHours(i) !== null).length;
-
   const health = tallyDataQuality(active);
 
   const kpis: Kpi[] = [
-    kpi('active_nodes', 'Công việc đang hoạt động', active.length, 'count', {
-      eligible: active.length,
-      excluded: items.length - active.length,
-      reasons: ['Đã hủy hoặc lưu trữ'],
-      drilldown: 'status=active',
-      hint: 'Toàn bộ công việc từ L3 trở xuống chưa hủy, chưa lưu trữ.',
-    }),
-    kpi('active_leaves', 'Điểm cuối đang hoạt động', activeLeaves.length, 'count', {
+    kpi('active_leaves', 'Tổng điểm cuối', activeLeaves.length, 'count', {
       eligible: activeLeaves.length,
       excluded: active.length - activeLeaves.length,
       reasons: ['Node có công việc con'],
@@ -191,6 +199,34 @@ export function computeControlTower(
       drilldown: 'priority=P1&status=open',
       hint: 'Ưu tiên trọng yếu chưa hoàn thành/chưa hủy.',
     }),
+    kpi('p2_active', 'P2 đang mở', open.filter((i) => i.priority === 'P2').length, 'count', {
+      eligible: open.length,
+      excluded: 0,
+      reasons: [],
+      drilldown: 'priority=P2&status=open',
+      hint: 'Ưu tiên cao chưa hoàn thành/chưa hủy.',
+    }),
+    kpi('due_3_7', 'Sắp đến hạn trong 7 ngày', dueInSevenDays.length, 'count', {
+      eligible: open.filter((i) => i.schedule_type === 'DEADLINE').length,
+      excluded: open.filter((i) => i.schedule_type !== 'DEADLINE').length,
+      reasons: ['Không phải việc có thời hạn'],
+      drilldown: 'warning=due_7',
+      hint: 'Còn từ 3 đến 7 ngày làm việc.',
+    }),
+    kpi('due_1_2', 'Sắp đến hạn trước 2 ngày', dueInTwoDays.length, 'count', {
+      eligible: open.filter((i) => i.schedule_type === 'DEADLINE').length,
+      excluded: open.filter((i) => i.schedule_type !== 'DEADLINE').length,
+      reasons: ['Không phải việc có thời hạn'],
+      drilldown: 'warning=due_2',
+      hint: 'Còn 1–2 ngày làm việc.',
+    }),
+    kpi('due_today', 'Đến hạn hôm nay', dueToday.length, 'count', {
+      eligible: open.filter((i) => i.schedule_type === 'DEADLINE').length,
+      excluded: open.filter((i) => i.schedule_type !== 'DEADLINE').length,
+      reasons: ['Không phải việc có thời hạn'],
+      drilldown: 'warning=due_today',
+      hint: `Hạn hiển thị đúng ngày nghiệp vụ ${ctx.today}.`,
+    }),
     kpi('overdue', 'Quá hạn', overdue.length, 'count', {
       eligible: open.filter((i) => i.schedule_type === 'DEADLINE').length,
       excluded: open.filter((i) => i.schedule_type !== 'DEADLINE').length,
@@ -198,48 +234,12 @@ export function computeControlTower(
       drilldown: 'warning=overdue',
       hint: `Hạn hiển thị trước ngày nghiệp vụ ${ctx.today}, chưa hoàn thành.`,
     }),
-    kpi('near_due', `Đến hạn trong ${ctx.deadlineWarningDays} ngày làm việc`, nearDue.length, 'count', {
-      eligible: open.filter((i) => i.schedule_type === 'DEADLINE').length,
-      excluded: open.filter((i) => i.schedule_type !== 'DEADLINE').length,
-      reasons: ['Không phải việc có thời hạn'],
-      drilldown: 'warning=near_due',
-      hint: 'Tính theo ngày làm việc, đã loại Chủ nhật và ngày nghỉ đã khai báo.',
-    }),
     kpi('completed_period', 'Hoàn thành trong kỳ', completedInPeriod.length, 'count', {
       eligible: completedInPeriod.length,
       excluded: 0,
       reasons: [],
       drilldown: 'status=COMPLETED',
       hint: 'Có ngày hoàn thành thực tế nằm trong kỳ đang lọc.',
-    }),
-    kpi(
-      'on_time_rate',
-      'Tỷ lệ đúng hạn',
-      onTimeEvaluable.length > 0
-        ? Math.round((onTimeCount / onTimeEvaluable.length) * 1000) / 10
-        : null,
-      'percent',
-      {
-        eligible: onTimeEvaluable.length,
-        excluded: completedInPeriod.length - onTimeEvaluable.length,
-        reasons: ['Hoàn thành nhưng thiếu hạn hoặc thiếu ngày hoàn thành thực tế'],
-        drilldown: 'status=COMPLETED',
-        hint: `Mẫu số = ${onTimeEvaluable.length} việc hoàn thành có đủ hạn và ngày thực tế.`,
-      },
-    ),
-    kpi('avg_progress', 'Tiến độ trung bình điểm cuối', progressResult.value, 'percent', {
-      eligible: progressResult.eligible_count,
-      excluded: progressResult.excluded_count,
-      reasons: ['Công việc khác', 'Chưa lên lịch/Đã lên lịch', 'Chưa có giá trị tiến độ'],
-      drilldown: 'status=active&leaf=1',
-      hint: 'Trung bình đều theo Sheet nguồn; đã loại nhóm “Công việc khác” và việc chưa khởi động.',
-    }),
-    kpi('remaining_hours', 'Giờ còn lại', remainingEligible > 0 ? Math.round(remaining * 10) / 10 : null, 'hours', {
-      eligible: remainingEligible,
-      excluded: activeLeaves.length - remainingEligible,
-      reasons: ['Chưa nhập khối lượng giờ'],
-      drilldown: 'quality=MISSING_ESTIMATED_HOURS',
-      hint: 'Σ giờ ước tính × (1 − tiến độ), chỉ tính điểm cuối đã có khối lượng.',
     }),
     kpi('data_completeness', 'Độ đầy đủ dữ liệu', health.completeness, 'percent', {
       eligible: active.length,
@@ -263,7 +263,7 @@ export function computeControlTower(
       ).length,
       other_overdue: overdue.filter((i) => i.priority !== 'P1').length,
     },
-    interventions: rankInterventions(open, ctx).slice(0, 10),
+    interventions: rankInterventions(open, ctx).slice(0, 5),
     by_management_level: groupBy(
       active,
       (i) => ctx.managementLevelCodeOf(i) ?? 'UNKNOWN',
@@ -283,6 +283,18 @@ export function computeControlTower(
       (key) => (key === 'UNASSIGNED' ? 'Chưa giao' : labels.userName(key)),
       ctx,
     ),
+    recent_results: items
+      .filter((item): item is WorkItem & { result_link: string } => Boolean(item.result_link))
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+      .slice(0, 5)
+      .map((item) => ({
+        work_item_id: item.id,
+        title: item.title,
+        result_link: item.result_link,
+        assignee_id: item.primary_assignee_id,
+        completed_at: item.completed_at,
+        updated_at: item.updated_at,
+      })),
     data_health: health,
   };
 }
@@ -319,7 +331,9 @@ export function computeDeadlineBuckets(
 ): DeadlineBuckets {
   const buckets: DeadlineBuckets = {
     overdue: 0,
-    due_0_7: 0,
+    due_today: 0,
+    due_1_2: 0,
+    due_3_7: 0,
     due_8_30: 0,
     due_over_30: 0,
     no_deadline: 0,
@@ -336,10 +350,12 @@ export function computeDeadlineBuckets(
       buckets.no_deadline += 1;
       continue;
     }
-    const left = businessDaysLeft(ctx.today, end, ctx.calendar);
+    const left = deadlineDaysAway(ctx.today, end, ctx.calendar);
     if (left === null) buckets.no_deadline += 1;
     else if (left < 0) buckets.overdue += 1;
-    else if (left <= ctx.deadlineWarningDays) buckets.due_0_7 += 1;
+    else if (left === 0) buckets.due_today += 1;
+    else if (left <= 2) buckets.due_1_2 += 1;
+    else if (left <= 7) buckets.due_3_7 += 1;
     else if (left <= 30) buckets.due_8_30 += 1;
     else buckets.due_over_30 += 1;
   }
@@ -362,16 +378,16 @@ export function rankInterventions(
     let score = 0;
 
     const end = item.display_end ?? item.planned_end;
-    const daysLeft = businessDaysLeft(ctx.today, end, ctx.calendar);
+    const daysLeft = deadlineDaysAway(ctx.today, end, ctx.calendar);
 
     if (isOverdue(item, ctx.today)) {
       const overdueBy = daysLeft === null ? 1 : Math.abs(daysLeft);
       score += 50 + Math.min(overdueBy, 30);
       reasons.push(`Quá hạn ${overdueBy} ngày làm việc`);
-    } else if (daysLeft !== null && daysLeft <= ctx.deadlineWarningDays) {
-      score += 25 - daysLeft;
-      reasons.push(`Còn ${daysLeft} ngày làm việc`);
-    }
+    } else if (daysLeft === 0) {
+      score += 25;
+      reasons.push('Đến hạn hôm nay');
+    } else continue;
 
     if (item.priority === 'P1') {
       score += 30;
@@ -437,6 +453,7 @@ function groupBy(
   return [...groups.entries()]
     .map(([key, group]) => {
       const progress = averageProgress(group, ctx.progress);
+      const quality = tallyDataQuality(group);
       return {
         key,
         label: labelOf(key),
@@ -445,6 +462,7 @@ function groupBy(
         overdue: group.filter((i) => isOverdue(i, ctx.today)).length,
         progress: progress.value,
         progress_eligible: progress.eligible_count,
+        data_completeness: quality.completeness,
       };
     })
     .sort((a, b) => b.total - a.total);
@@ -514,7 +532,8 @@ export function computePeriodReport(
     };
   };
 
-  const oneOff = [rowFor('TOTAL'), rowFor(3), rowFor(4), rowFor(5), rowFor(6)];
+  const levels = [...new Set(items.map((item) => item.level))].sort((a, b) => a - b);
+  const oneOff = [rowFor('TOTAL'), ...levels.map((level) => rowFor(level))];
   const recurring = summarizeExecutionLogs(logs, period);
   const total = oneOff[0];
 

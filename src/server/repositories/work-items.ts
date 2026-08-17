@@ -42,6 +42,7 @@ export interface WorkItemQuery {
   dataQuality?: DataQualityStatus[];
   includeArchived?: boolean;
   onlyLeaf?: boolean;
+  hasResult?: boolean;
   dueBefore?: string;
   dueAfter?: string;
   sort?: Sort[];
@@ -69,6 +70,7 @@ function baseFilters(query: WorkItemQuery): Filter[] {
   if (query.parentId) filters.push({ field: 'parent_id', op: 'eq', value: query.parentId });
   if (query.rootId) filters.push({ field: 'root_id', op: 'eq', value: query.rootId });
   if (query.onlyLeaf) filters.push({ field: 'is_leaf', op: 'eq', value: true });
+  if (query.hasResult) filters.push({ field: 'result_link', op: 'notNull' });
   if (query.dueBefore) filters.push({ field: 'display_end', op: 'lte', value: query.dueBefore });
   if (query.dueAfter) filters.push({ field: 'display_end', op: 'gte', value: query.dueAfter });
 

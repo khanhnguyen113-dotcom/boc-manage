@@ -145,6 +145,21 @@ export function businessDaysLeft(
   return -countBusinessDays(addDays(end, 1), today, cal);
 }
 
+/**
+ * Khoảng cách deadline dùng cho nhãn cảnh báo: hôm nay = 0, ngày làm việc kế tiếp = 1.
+ * Khác `businessDaysLeft` vốn mô phỏng cột Sheet và tính cả ngày hiện tại.
+ */
+export function deadlineDaysAway(
+  today: BusinessDate,
+  end: BusinessDate | null,
+  cal: BusinessCalendar,
+): number | null {
+  if (!end || !isBusinessDateString(end)) return null;
+  if (end === today) return 0;
+  if (end > today) return Math.max(1, countBusinessDays(addDays(today, 1), end, cal));
+  return -countBusinessDays(addDays(end, 1), today, cal);
+}
+
 // ---------------------------------------------------------------------------
 // Kỳ báo cáo
 // ---------------------------------------------------------------------------
