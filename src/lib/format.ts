@@ -72,11 +72,15 @@ export function formatRelative(iso: string | null | undefined): string {
   return 'vừa xong';
 }
 
-/** “còn 5 ngày làm việc” / “quá hạn 3 ngày làm việc”. */
+/**
+ * Nhãn deadline cho người dùng. Đầu vào luôn là `deadlineDaysAway`: hôm nay = 0, ngày làm việc
+ * kế tiếp = 1 — cùng cách đếm với KPI Control Tower và bộ lọc “Còn 1–2 ngày”, để một công việc
+ * không thể vừa nằm trong nhóm “đến hạn hôm nay” vừa hiện “Còn 1 ngày”.
+ */
 export function formatDaysLeft(days: number | null | undefined): string {
   if (days === null || days === undefined) return EMPTY;
   if (days < 0) return `Quá hạn ${Math.abs(days)} ngày`;
-  if (days === 0) return 'Hết ngày làm việc';
+  if (days === 0) return 'Đến hạn hôm nay';
   return `Còn ${days} ngày`;
 }
 

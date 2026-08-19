@@ -13,6 +13,7 @@ import { Client, TablesDB } from 'node-appwrite';
 import { installAppwriteDnsOverride } from '../src/server/appwrite/dns-override';
 import { TABLES, type TableSpec } from '../src/server/db/schema';
 import { listAllColumns, listAllIndexes } from './lib/appwrite-metadata';
+import { findRequiredGaps } from './lib/required-gaps';
 
 const endpoint = process.env.APPWRITE_ENDPOINT;
 const projectId = process.env.APPWRITE_PROJECT_ID;
@@ -90,6 +91,17 @@ async function main(): Promise<void> {
 
   for (const spec of Object.values(TABLES) as TableSpec[]) {
     await verifyTable(spec);
+  }
+
+  // So metadata thôi thì không đủ: cột đúng, ràng buộc đúng, nhưng bản ghi cũ vẫn có thể thiếu giá
+  // trị ở cột bắt buộc — và khi đó mọi lần ghi lên chúng đều lỗi 400 dù màn hình đọc vẫn bình thường.
+  for (const gap of await findRequiredGaps(tablesDB, databaseId)) {
+    problems.push({
+      level: 'error',
+      message:
+        `Bảng ${gap.table}: ${gap.count} bản ghi thiếu giá trị ở cột bắt buộc "${gap.column}" — ` +
+        'mọi thao tác cập nhật lên các bản ghi này sẽ lỗi "Missing required attribute".',
+    });
   }
 
   const errors = problems.filter((p) => p.level === 'error');

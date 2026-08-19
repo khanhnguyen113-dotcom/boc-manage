@@ -114,6 +114,8 @@ function toSortQuery(sort: Sort): string {
 
 /** Appwrite giới hạn 100 row/lần; `all()` phải phân trang cho tới hết. */
 const PAGE_SIZE = 100;
+/** Số lượt ghi chạy song song khi tính lại tổ tiên — đủ nhanh mà không làm nghẽn Appwrite. */
+const WRITE_CONCURRENCY = 8;
 
 export function createAppwriteStore(): DataStore {
   const tablesDB = new TablesDB(createClient());
@@ -203,13 +205,23 @@ export function createAppwriteStore(): DataStore {
       table: TableName,
       updates: { id: string; patch: Record<string, unknown> }[],
     ): Promise<void> {
-      for (const { id, patch } of updates) {
-        await tablesDB.updateRow({
-          databaseId,
-          tableId: table,
-          rowId: id,
-          data: toPayload(table, patch),
-        });
+      // Mỗi ancestor có patch riêng nên không dùng được `updateRows` (một `data` cho mọi row),
+      // còn `upsertRows` tuy nhận mảng row nhưng Appwrite validate **cả row** chứ không chỉ phần
+      // gửi lên: patch thiếu `code`/`title` bị trả 400 `Missing required attribute "code"`, tức là
+      // mọi lần tính lại tổ tiên đều hỏng. Vì vậy vẫn phải `updateRow` từng bản ghi — nhưng chạy
+      // song song có giới hạn để nhánh sâu không cần hàng chục lượt mạng nối đuôi nhau.
+      for (let offset = 0; offset < updates.length; offset += WRITE_CONCURRENCY) {
+        const chunk = updates.slice(offset, offset + WRITE_CONCURRENCY);
+        await Promise.all(
+          chunk.map(({ id, patch }) =>
+            tablesDB.updateRow({
+              databaseId,
+              tableId: table,
+              rowId: id,
+              data: toPayload(table, patch),
+            }),
+          ),
+        );
       }
     },
 

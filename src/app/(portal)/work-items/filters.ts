@@ -1,5 +1,6 @@
 import { businessDaysLeft, deadlineDaysAway, type BusinessCalendar } from '@/domain/business-days';
-import { isOverdue } from '@/domain/dates';
+import { deadlineDateOf, isOverdue } from '@/domain/dates';
+import { isOpen } from '@/domain/metrics';
 import type {
   BusinessDate,
   DataQualityStatus,
@@ -98,6 +99,21 @@ export function parseFilters(params: SearchParams): ParsedFilters {
 }
 
 /**
+ * Khoảng cách deadline dùng chung một định nghĩa với KPI trên Control Tower
+ * (`deadlineDateOf` — chỉ việc có thời hạn, lấy hạn hiển thị rồi mới tới kế hoạch gốc).
+ * Trước đây bộ lọc tự tính lấy nên `?warning=due_2` trả nhiều bản ghi hơn con số KPI trỏ tới nó.
+ */
+function daysAway(
+  item: WorkItem,
+  ctx: { today: BusinessDate; calendar: BusinessCalendar },
+  inRange: (left: number) => boolean,
+): boolean {
+  if (!isOpen(item)) return false;
+  const left = deadlineDaysAway(ctx.today, deadlineDateOf(item), ctx.calendar);
+  return left !== null && inRange(left);
+}
+
+/**
  * Dựng predicate cho các bộ lọc phụ thuộc ngày nghiệp vụ và lịch làm việc.
  *
  * Chạy phía server, **trước** phân trang (xem `searchWorkItems`), nếu không tổng số và các link
@@ -110,7 +126,7 @@ export function buildDerivedFilter(
   const predicates: ((item: WorkItem) => boolean)[] = [];
 
   if (parsed.statusPreset === 'open') {
-    predicates.push((item) => item.status !== 'COMPLETED' && item.status !== 'CANCELLED');
+    predicates.push(isOpen);
   }
   if (parsed.statusPreset === 'active') {
     predicates.push((item) => !item.is_archived && item.status !== 'CANCELLED');
@@ -122,30 +138,19 @@ export function buildDerivedFilter(
       break;
     case 'near_due':
       predicates.push((item) => {
-        if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
-        const left = businessDaysLeft(ctx.today, item.display_end, ctx.calendar);
+        if (!isOpen(item)) return false;
+        const left = businessDaysLeft(ctx.today, deadlineDateOf(item), ctx.calendar);
         return left !== null && left >= 0 && left <= ctx.deadlineWarningDays;
       });
       break;
     case 'due_7':
-      predicates.push((item) => {
-        if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
-        const left = deadlineDaysAway(ctx.today, item.display_end, ctx.calendar);
-        return left !== null && left >= 3 && left <= 7;
-      });
+      predicates.push((item) => daysAway(item, ctx, (left) => left >= 3 && left <= 7));
       break;
     case 'due_2':
-      predicates.push((item) => {
-        if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
-        const left = deadlineDaysAway(ctx.today, item.display_end, ctx.calendar);
-        return left !== null && left >= 1 && left <= 2;
-      });
+      predicates.push((item) => daysAway(item, ctx, (left) => left >= 1 && left <= 2));
       break;
     case 'due_today':
-      predicates.push((item) => {
-        if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
-        return deadlineDaysAway(ctx.today, item.display_end, ctx.calendar) === 0;
-      });
+      predicates.push((item) => daysAway(item, ctx, (left) => left === 0));
       break;
     case 'missing_assignee':
       predicates.push((item) => item.is_leaf && !item.primary_assignee_id);

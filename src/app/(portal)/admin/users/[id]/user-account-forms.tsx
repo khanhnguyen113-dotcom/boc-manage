@@ -146,8 +146,8 @@ export function UserAccountForms({
             <Alert tone="warning" title="Không thể tự xóa tài khoản đang đăng nhập" />
           ) : (
             <>
-              <Field label="Nhập XOA để xác nhận" htmlFor="confirmation" required error={deleteState.fieldErrors?.confirmation}>
-                <Input id="confirmation" name="confirmation" autoComplete="off" placeholder="XOA" required />
+              <Field label="Nhập XÓA để xác nhận" htmlFor="confirmation" required error={deleteState.fieldErrors?.confirmation}>
+                <Input id="confirmation" name="confirmation" autoComplete="off" placeholder="XÓA" required />
               </Field>
               <SubmitButton variant="danger" pendingLabel="Đang xóa…"><Trash2 aria-hidden className="size-4" />Xóa vĩnh viễn</SubmitButton>
             </>

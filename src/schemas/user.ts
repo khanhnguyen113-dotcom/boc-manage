@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { deleteConfirmationSchema } from './confirmation';
+
 export const userRoleSchema = z.enum([
   'system_admin',
   'boc_director',
@@ -75,7 +77,7 @@ export const changeOwnPasswordSchema = z
 
 export const deleteUserSchema = z.object({
   user_id: z.string().min(1),
-  confirmation: z.literal('XOA', { message: 'Nhập XOA để xác nhận xóa vĩnh viễn' }),
+  confirmation: deleteConfirmationSchema,
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

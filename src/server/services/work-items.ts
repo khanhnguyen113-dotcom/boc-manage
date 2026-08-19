@@ -102,7 +102,12 @@ async function recalculateAndPersist(
   if (uniqueRoots.length === 0) return new Set();
 
   const all = await tx.all<Row & WorkItem>('work_items');
-  const subset = all.filter((item) => uniqueRoots.includes(item.root_id));
+  // Node đã soft-delete không còn tham gia cây nghiệp vụ. Nếu vẫn đưa chúng vào đây, thao tác
+  // xóa nhánh vừa ghi xong lại phải tính và ghi derived cho chính các node đã xóa, làm số lượt
+  // Appwrite tăng gần gấp đôi và có thể khiến node cha còn coi nhánh đã xóa là dữ liệu đầu vào.
+  const subset = all.filter(
+    (item) => uniqueRoots.includes(item.root_id) && !item.is_deleted,
+  );
   if (subset.length === 0) return new Set();
 
   const resultAttachments = await workItemIdsWithResultFile();

@@ -141,12 +141,20 @@ export function LoadStateBadge({ state }: { state: LoadState }) {
   );
 }
 
+/** `daysLeft` theo cách đếm của `deadlineDaysAway`: hôm nay = 0, ngày làm việc kế tiếp = 1. */
 export function OverdueBadge({ daysLeft }: { daysLeft: number | null }) {
   if (daysLeft === null) return null;
   if (daysLeft < 0) {
     return (
       <Badge tone="danger" icon={CalendarX}>
         Quá hạn {Math.abs(daysLeft)} ngày
+      </Badge>
+    );
+  }
+  if (daysLeft === 0) {
+    return (
+      <Badge tone="danger" icon={CalendarClock}>
+        Đến hạn hôm nay
       </Badge>
     );
   }

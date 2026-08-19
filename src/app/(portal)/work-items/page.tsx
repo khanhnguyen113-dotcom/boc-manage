@@ -16,8 +16,9 @@ import {
 } from '@/components/ui/primitives';
 import { ProgressBar } from '@/components/ui/progress';
 import { Pagination, SortHeader, TableShell, Td, Th, Tr } from '@/components/ui/table';
-import { businessDaysLeft, formatDate } from '@/domain/business-days';
-import { isOverdue } from '@/domain/dates';
+import { deadlineDaysAway, formatDate } from '@/domain/business-days';
+import { isOpen } from '@/domain/metrics';
+import { deadlineDateOf, isOverdue } from '@/domain/dates';
 import { remainingHours } from '@/domain/progress';
 import type { WorkItem } from '@/domain/types';
 import { formatDaysLeft, formatHours } from '@/lib/format';
@@ -174,7 +175,10 @@ function Row({
   item: WorkItem;
   ctx: Awaited<ReturnType<typeof getBocContext>>;
 }) {
-  const daysLeft = businessDaysLeft(ctx.today, item.display_end, ctx.calendar);
+  // Việc đã đóng không còn “còn mấy ngày”: dòng hoàn thành từng hiện “Đến hạn hôm nay”.
+  const daysLeft = isOpen(item)
+    ? deadlineDaysAway(ctx.today, deadlineDateOf(item), ctx.calendar)
+    : null;
   const overdue = isOverdue(item, ctx.today);
 
   return (

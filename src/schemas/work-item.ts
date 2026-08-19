@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { deleteConfirmationSchema } from './confirmation';
+
 /**
  * Zod cho mọi input từ client (guideline mục 0.9 bước “validate Zod”).
  *
@@ -146,7 +148,7 @@ export const deleteWorkItemSchema = z.object({
   id: z.string().min(1),
   expected_version: z.number().int().min(1),
   reason: z.string().trim().min(3, 'Ghi rõ lý do xóa').max(500),
-  confirmation: z.literal('XOA', { message: 'Nhập XOA để xác nhận' }),
+  confirmation: deleteConfirmationSchema,
 });
 
 export const executionLogSchema = z

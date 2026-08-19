@@ -24,8 +24,8 @@ export function DeleteWorkItemPanel({ id, version }: { id: string; version: numb
           <Field label="Lý do xóa" htmlFor="delete_reason" required error={state.fieldErrors?.reason}>
             <Textarea id="delete_reason" name="reason" rows={2} required />
           </Field>
-          <Field label={<>Nhập <strong>XOA</strong> để xác nhận</>} htmlFor="delete_confirmation" required error={state.fieldErrors?.confirmation}>
-            <Input id="delete_confirmation" name="confirmation" autoComplete="off" required />
+          <Field label={<>Nhập <strong>XÓA</strong> để xác nhận</>} htmlFor="delete_confirmation" required error={state.fieldErrors?.confirmation}>
+            <Input id="delete_confirmation" name="confirmation" autoComplete="off" placeholder="XÓA" required />
           </Field>
           <SubmitButton variant="danger" pendingLabel="Đang xóa…">Xóa công việc và nhánh con</SubmitButton>
         </form>

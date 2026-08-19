@@ -108,6 +108,22 @@ export function childBaselineWarnings(item: WorkItem, tree: TreeIndex): DateWarn
 }
 
 /**
+ * Ngày dùng để so deadline — guideline 8.6.
+ *
+ * Trả `null` khi công việc **không có thời hạn để so**: không phải việc có deadline, hoặc chưa
+ * có ngày kết thúc nào. Đây là nguồn duy nhất cho mọi tính toán “còn bao nhiêu ngày”, để KPI trên
+ * Control Tower và bộ lọc drill-down của `/work-items` không thể lệch nhau (nguyên tắc số liệu 3:
+ * mỗi KPI phải dẫn được về đúng danh sách bản ghi nguồn).
+ */
+export function deadlineDateOf(
+  item: Pick<WorkItem, 'schedule_type' | 'display_end' | 'planned_end'>,
+): BusinessDate | null {
+  if (item.schedule_type !== 'DEADLINE') return null;
+  const end = item.display_end ?? item.planned_end;
+  return isBusinessDateString(end) ? end : null;
+}
+
+/**
  * Quá hạn — guideline 8.6.
  *
  * ```
@@ -117,11 +133,10 @@ export function childBaselineWarnings(item: WorkItem, tree: TreeIndex): DateWarn
  * ```
  */
 export function isOverdue(item: WorkItem, today: BusinessDate): boolean {
-  if (item.schedule_type !== 'DEADLINE') return false;
   if (item.status === 'COMPLETED' || item.status === 'CANCELLED') return false;
   if (item.is_archived) return false;
-  const end = item.display_end ?? item.planned_end;
-  if (!isBusinessDateString(end)) return false;
+  const end = deadlineDateOf(item);
+  if (end === null) return false;
   return compareDates(end, today) < 0;
 }
 

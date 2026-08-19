@@ -18,8 +18,9 @@ import {
 } from '@/components/ui/badges';
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui/primitives';
 import { ProgressBar } from '@/components/ui/progress';
-import { businessDaysLeft, formatDate, isWithin, weekRange } from '@/domain/business-days';
-import { isOverdue } from '@/domain/dates';
+import { deadlineDaysAway, formatDate, isWithin, weekRange } from '@/domain/business-days';
+import { isOpen } from '@/domain/metrics';
+import { deadlineDateOf, isOverdue } from '@/domain/dates';
 import { isOccurrenceDue } from '@/domain/execution';
 import type { ExecutionLog, WorkItem } from '@/domain/types';
 import { formatDaysLeft } from '@/lib/format';
@@ -196,7 +197,10 @@ function WorkRow({
   userId: string;
   canSubmitCompletion: boolean;
 }) {
-  const daysLeft = businessDaysLeft(ctx.today, item.display_end, ctx.calendar);
+  // Việc đã đóng không còn “còn mấy ngày”: dòng hoàn thành từng hiện “Đến hạn hôm nay”.
+  const daysLeft = isOpen(item)
+    ? deadlineDaysAway(ctx.today, deadlineDateOf(item), ctx.calendar)
+    : null;
 
   return (
     <li className="px-5 py-4">

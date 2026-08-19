@@ -236,7 +236,7 @@ export async function listTreeFor(rootIds: readonly string[]): Promise<WorkItem[
   const store = await getStore();
   const all = await store.all<Row & WorkItem>('work_items');
   const set = new Set(rootIds);
-  return all.filter((item) => set.has(item.root_id));
+  return all.filter((item) => set.has(item.root_id) && !item.is_deleted);
 }
 
 export async function listAllWorkItems(): Promise<WorkItem[]> {

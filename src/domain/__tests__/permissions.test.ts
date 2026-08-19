@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CAPABILITIES,
+  ROLE_BASELINE,
   canReadWorkItem,
   canWriteWorkItem,
   effectiveCapabilities,
@@ -93,6 +94,32 @@ describe('effective capability', () => {
     const a = actor({ roles: ['viewer'] });
     expect(hasCapability(a, 'work.view')).toBe(true);
     expect(hasCapability(a, 'comment.create')).toBe(false);
+  });
+
+  // `/admin/users` in thẳng ROLE_BASELINE ra ma trận quyền kèm số đếm. Baseline lặp phần tử
+  // thì màn hình báo sai số capability và lặp dòng, dù `hasCapability` vẫn đúng vì dùng Set.
+  it('baseline của mọi vai trò không lặp capability', () => {
+    for (const [role, capabilities] of Object.entries(ROLE_BASELINE)) {
+      expect(new Set(capabilities).size, `vai trò ${role} có capability lặp`).toBe(
+        capabilities.length,
+      );
+    }
+  });
+
+  it('baseline chỉ chứa capability có trong danh mục', () => {
+    const known = new Set<string>(CAPABILITIES);
+    for (const [role, capabilities] of Object.entries(ROLE_BASELINE)) {
+      for (const capability of capabilities) {
+        expect(known.has(capability), `vai trò ${role} có capability lạ: ${capability}`).toBe(true);
+      }
+    }
+  });
+
+  it('vai trò cao kế thừa trọn vẹn vai trò thấp', () => {
+    const contains = (parent: readonly string[], child: readonly string[]) =>
+      child.every((capability) => parent.includes(capability));
+    expect(contains(ROLE_BASELINE.unit_manager, ROLE_BASELINE.member)).toBe(true);
+    expect(contains(ROLE_BASELINE.business_admin, ROLE_BASELINE.unit_manager)).toBe(true);
   });
 });
 

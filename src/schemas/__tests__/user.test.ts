@@ -4,6 +4,7 @@ import {
   changeOwnPasswordSchema,
   changeUserPasswordSchema,
   createUserSchema,
+  deleteUserSchema,
   updateUserSchema,
 } from '../user';
 
@@ -64,5 +65,19 @@ describe('user account schemas', () => {
         password_confirm: 'mat-khau-cu',
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('deleteUserSchema', () => {
+  // Cùng một quản trị viên gặp ô xác nhận ở cả màn công việc lẫn màn tài khoản; hai màn hình
+  // nhận hai chuỗi khác nhau là cái bẫy, không phải lớp an toàn.
+  it('chấp nhận cùng các dạng xác nhận như xóa công việc', () => {
+    for (const confirmation of ['XOA', 'XÓA', 'xóa', '  XÓA  ']) {
+      expect(deleteUserSchema.safeParse({ user_id: 'u1', confirmation }).success).toBe(true);
+    }
+  });
+
+  it('từ chối chuỗi khác', () => {
+    expect(deleteUserSchema.safeParse({ user_id: 'u1', confirmation: 'đồng ý' }).success).toBe(false);
   });
 });

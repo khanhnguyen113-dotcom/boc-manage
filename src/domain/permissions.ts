@@ -103,6 +103,15 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
 // Role baseline — guideline 4.4
 // ---------------------------------------------------------------------------
 
+/**
+ * Ghép baseline theo lớp: vai trò cao kế thừa vai trò thấp rồi bổ sung.
+ * Bỏ trùng ngay tại nguồn vì `ROLE_BASELINE` còn được **hiển thị** trên ma trận quyền ở
+ * `/admin/users`; danh sách lặp làm số capability đếm sai và người đọc tưởng có quyền lạ.
+ */
+function baseline(...groups: readonly Capability[][]): Capability[] {
+  return [...new Set(groups.flat())];
+}
+
 const MEMBER_BASE: Capability[] = [
   'portal.access',
   'dashboard.view_self',
@@ -123,25 +132,20 @@ const MEMBER_BASE: Capability[] = [
   'report.view',
 ];
 
-const UNIT_MANAGER_BASE: Capability[] = [
-  ...MEMBER_BASE,
+const UNIT_MANAGER_BASE: Capability[] = baseline(MEMBER_BASE, [
   'dashboard.view_unit',
-  'work.create_l3',
-  'work.create_child',
   'work.edit_core',
   'work.assign',
   'work.change_priority',
   'work.complete',
-  'work.approve_completion',
   'work.cancel',
   'work.archive',
   'work.delete',
   'comment.moderate',
   'report.export',
-];
+]);
 
-const BUSINESS_ADMIN_BASE: Capability[] = [
-  ...UNIT_MANAGER_BASE,
+const BUSINESS_ADMIN_BASE: Capability[] = baseline(UNIT_MANAGER_BASE, [
   'dashboard.view_org',
   'work.view_sensitive',
   'catalog.manage',
@@ -154,7 +158,7 @@ const BUSINESS_ADMIN_BASE: Capability[] = [
   'file.delete_own',
   'user.manage',
   'audit.view',
-];
+]);
 
 /** Super admin vận hành hệ thống: có toàn bộ capability và scope toàn BOC. */
 const SYSTEM_ADMIN_BASE: Capability[] = [...CAPABILITIES];

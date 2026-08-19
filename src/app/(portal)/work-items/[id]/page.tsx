@@ -32,7 +32,9 @@ import {
   Stat,
 } from '@/components/ui/primitives';
 import { ProgressBar } from '@/components/ui/progress';
-import { businessDaysLeft, formatDate } from '@/domain/business-days';
+import { deadlineDaysAway, formatDate } from '@/domain/business-days';
+import { isOpen } from '@/domain/metrics';
+import { deadlineDateOf } from '@/domain/dates';
 import { RECURRENCE_CYCLE_BY_CODE } from '@/domain/catalogs';
 import { DATA_QUALITY_LABELS, type DataQualityCode } from '@/domain/data-quality';
 import { buildTreeIndex } from '@/domain/hierarchy';
@@ -123,7 +125,10 @@ export default async function WorkItemDetailPage({
     ? await listAuditLogs({ entityType: 'work_item', entityId: item.id, pageSize: 50 })
     : null;
 
-  const daysLeft = businessDaysLeft(ctx.today, item.display_end, ctx.calendar);
+  // Việc đã đóng không còn “còn mấy ngày”: dòng hoàn thành từng hiện “Đến hạn hôm nay”.
+  const daysLeft = isOpen(item)
+    ? deadlineDaysAway(ctx.today, deadlineDateOf(item), ctx.calendar)
+    : null;
   const load = computeItemLoad(item, ctx.today, ctx.calendar, ctx.capacity);
   const inconsistencies = statusWarnings(item, ctx.today);
   const canEdit = user.capabilities.has('work.edit_core');

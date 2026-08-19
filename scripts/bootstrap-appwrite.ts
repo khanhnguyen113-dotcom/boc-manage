@@ -20,6 +20,7 @@ import { Client, Permission, Role, Storage, TablesDB, TablesDBIndexType } from '
 
 import { installAppwriteDnsOverride } from '../src/server/appwrite/dns-override';
 import { listAllColumns, listAllIndexes, type ColumnInfo } from './lib/appwrite-metadata';
+import { backfillRequiredGaps, findRequiredGaps } from './lib/required-gaps';
 import {
   ALLOWED_FILE_EXTENSIONS,
   BUCKETS,
@@ -370,6 +371,33 @@ async function main(): Promise<void> {
   }
 
   await ensureBuckets();
+
+  // Cột bắt buộc thêm vào bảng đã có dữ liệu ⇒ bản ghi cũ mang null ⇒ MỌI lần update sau đó hỏng
+  // (Appwrite kiểm tra cả row, không riêng phần patch). Vá ngay tại đây vì chỉ bootstrap mới biết
+  // giá trị mặc định đã khai báo — Appwrite không cho đặt `default` trên cột required.
+  console.log('\nKiểm tra bản ghi cũ thiếu giá trị ở cột bắt buộc…');
+  const gaps = await findRequiredGaps(tablesDB, databaseId);
+  if (gaps.length === 0) {
+    console.log('  ✓ Không có bản ghi nào thiếu.');
+  } else {
+    for (const gap of gaps) {
+      console.log(
+        `  - ${gap.table}.${gap.column}: ${gap.count} bản ghi thiếu` +
+          (gap.fallback === undefined ? ' (KHÔNG có mặc định khai báo)' : ` → điền ${JSON.stringify(gap.fallback)}`),
+      );
+    }
+    const { patched, manual } = await backfillRequiredGaps(tablesDB, databaseId, gaps, (line) =>
+      console.log(line),
+    );
+    console.log(`  ✓ Đã điền ${patched} bản ghi.`);
+    for (const gap of manual) {
+      drift.push(
+        `Bảng ${gap.table} có ${gap.count} bản ghi thiếu cột bắt buộc "${gap.column}" và schema ` +
+          'không khai báo giá trị mặc định — phải quyết định giá trị rồi điền thủ công, nếu không ' +
+          'mọi thao tác ghi lên các bản ghi này đều lỗi.',
+      );
+    }
+  }
 
   const manifest = {
     generated_at: new Date().toISOString(),

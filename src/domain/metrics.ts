@@ -17,7 +17,7 @@ import {
   type DateRange,
 } from './business-days';
 import { CLOSED_STATUSES } from './catalogs';
-import { completedOnTime, isOverdue } from './dates';
+import { completedOnTime, deadlineDateOf, isOverdue } from './dates';
 import { summarizeExecutionLogs, type ExecutionSummary } from './execution';
 import { averageProgress, type ProgressContext } from './progress';
 import { tallyDataQuality } from './data-quality';
@@ -159,15 +159,12 @@ export function computeControlTower(
   const overdue = open.filter((i) => isOverdue(i, ctx.today));
 
   const nearDue = open.filter((i) => {
-    if (i.schedule_type !== 'DEADLINE') return false;
-    const left = businessDaysLeft(ctx.today, i.display_end ?? i.planned_end, ctx.calendar);
+    const left = businessDaysLeft(ctx.today, deadlineDateOf(i), ctx.calendar);
     return left !== null && left >= 0 && left <= ctx.deadlineWarningDays;
   });
 
   const daysLeftOf = (item: WorkItem) =>
-    item.schedule_type === 'DEADLINE'
-      ? deadlineDaysAway(ctx.today, item.display_end ?? item.planned_end, ctx.calendar)
-      : null;
+    deadlineDaysAway(ctx.today, deadlineDateOf(item), ctx.calendar);
   const dueToday = open.filter((item) => daysLeftOf(item) === 0);
   const dueInTwoDays = open.filter((item) => {
     const left = daysLeftOf(item);
@@ -245,7 +242,7 @@ export function computeControlTower(
       eligible: active.length,
       excluded: 0,
       reasons: [],
-      drilldown: 'quality=INCOMPLETE',
+      drilldown: 'dq=INCOMPLETE',
       hint: 'Bản ghi hợp lệ / tổng bản ghi đang hoạt động.',
     }),
   ];

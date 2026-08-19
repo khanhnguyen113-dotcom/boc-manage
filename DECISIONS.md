@@ -233,6 +233,52 @@ nhận `XOA`. Bản ghi biến mất khỏi các màn hình nhưng vẫn còn tr
 
 ---
 
+## ADR-020 — Một định nghĩa deadline duy nhất cho KPI, bộ lọc và nhãn
+
+**Bối cảnh.** Cùng một công việc hiện ba con số khác nhau tuỳ màn hình. Thẻ “Sắp đến hạn trước
+2 ngày” đếm 6 nhưng bấm vào ra 7 dòng; việc đến hạn hôm nay nằm trong nhóm “Đến hạn hôm nay” lại
+mang nhãn “Còn 1 ngày”; việc `schedule_type = UNSCHEDULED` hiện “Quá hạn 8 ngày” dù Control Tower
+không đếm nó là quá hạn. Nguyên nhân: mỗi nơi tự tính lấy — KPI lọc `schedule_type = DEADLINE` và
+lấy `display_end ?? planned_end`, bộ lọc chỉ lấy `display_end` cho mọi loại lịch, còn nhãn thì dùng
+`businessDaysLeft` (tính cả hôm nay) trong khi các nhóm dùng `deadlineDaysAway` (hôm nay = 0).
+
+**Quyết định.** `deadlineDateOf(item)` trong `src/domain/dates.ts` là **nguồn duy nhất** trả ngày
+dùng để so deadline: `null` nếu không phải việc có thời hạn, ngược lại `display_end ?? planned_end`.
+KPI, bộ lọc drill-down và nhãn trên mọi màn hình đều đi qua nó. Nhãn cho người dùng luôn nhận đầu
+vào theo `deadlineDaysAway` và `formatDaysLeft` là nơi duy nhất sinh chuỗi. Việc đã hoàn thành/hủy
+không hiện đếm ngược.
+
+**Hệ quả.** Nguyên tắc số liệu 3 (“mọi KPI phải truy vết được”) trở thành ràng buộc kiểm được:
+`filters.test.ts` đối chiếu **số của thẻ KPI với số dòng của chính link nó trỏ tới**, nên lệch định
+nghĩa sẽ làm đỏ test thay vì âm thầm ra hai con số.
+
+---
+
+## ADR-021 — Cột bắt buộc thêm sau phải được vá dữ liệu, và `verify:schema` kiểm cả dữ liệu
+
+**Bối cảnh.** Thêm `completion_approval_status` và `is_deleted` (đều `required`) vào `work_items`
+đang có 132 bản ghi. Appwrite **không cho** đặt `default` trên cột bắt buộc, nên 129 bản ghi cũ
+nhận `null`; mà Appwrite lại validate **toàn bộ row** khi update chứ không chỉ phần patch. Kết quả:
+mọi thao tác ghi lên bản ghi cũ trả 400 `Missing required attribute` — nghĩa là **không ai cập nhật
+được công việc nào**, trong khi đọc vẫn bình thường và `verify:schema` vẫn báo “khớp hoàn toàn” vì
+metadata đúng.
+
+**Quyết định.**
+- `bootstrap:appwrite` quét và **tự điền** giá trị mặc định đã khai báo cho bản ghi cũ thiếu cột
+  bắt buộc; vá theo từng bản ghi và chỉ đụng cột đang `null` để không xoá giá trị thật.
+- Cột bắt buộc **không** khai báo mặc định thì báo drift để người vận hành quyết định, không đoán.
+- `verify:schema` coi đây là **lỗi** chứ không phải cảnh báo: so metadata thôi là chưa đủ.
+
+**Hệ quả.** Mọi cột `required` thêm về sau bắt buộc có `default` trong `schema.ts`, dù Appwrite
+không dùng tới nó khi tạo column — giá trị đó chính là thứ script dùng để vá dữ liệu cũ.
+
+Hệ quả thứ hai, ghi lại để không thử lại: `tablesDB.upsertRows` **không** dùng được để ghi hàng
+loạt bản patch. Tài liệu SDK ghi “may contain partial rows” nhưng server validate như row đầy đủ và
+trả `Missing required attribute "code"`. Việc tính lại tổ tiên vì vậy vẫn gọi `updateRow` từng bản
+ghi, chỉ chạy song song có giới hạn.
+
+---
+
 ## Nhật ký phê duyệt
 
 | ADR | Ngày | Người quyết định | Ghi chú |
@@ -240,3 +286,4 @@ nhận `XOA`. Bản ghi biến mất khỏi các màn hình nhưng vẫn còn tr
 | ADR-001…015 | 12/08/2026 | Đội phát triển | Quyết định kỹ thuật, chờ PO phản hồi các mục trong `NEED_CONFIRMATION.md` |
 | ADR-016…017 | 12/08/2026 | Đội phát triển | Phát sinh khi đưa dữ liệu thật lên Appwrite self-hosted của BOC |
 | ADR-018…019 | 19/08/2026 | BOC | Làm rõ luồng duyệt hoàn thành và quyền xóa công việc |
+| ADR-020…021 | 19/08/2026 | Đội phát triển | Phát sinh khi rà lỗi trên môi trường Appwrite thật |

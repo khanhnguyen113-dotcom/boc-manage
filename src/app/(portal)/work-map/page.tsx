@@ -6,10 +6,13 @@ import { LevelBadge } from '@/components/ui/badges';
 import { Input } from '@/components/ui/form';
 import { Alert, Button, ButtonLink, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui/primitives';
 import { deadlineDaysAway } from '@/domain/business-days';
+import { WORK_STATUS_BY_CODE } from '@/domain/catalogs';
+import { deadlineDateOf } from '@/domain/dates';
+import { isOpen } from '@/domain/metrics';
 import { ancestorsOf, buildTreeIndex, descendantsOf, type TreeIndex } from '@/domain/hierarchy';
 import type { WorkItem } from '@/domain/types';
 import { cn } from '@/lib/cn';
-import { formatInteger } from '@/lib/format';
+import { EMPTY, formatDaysLeft, formatInteger } from '@/lib/format';
 import { requireUser } from '@/server/auth/current-user';
 import { listWorkItemsInScope } from '@/server/repositories/work-items';
 import { getBocContext } from '@/server/services/context';
@@ -149,15 +152,15 @@ function TreeNode({
   canCreateWork: boolean;
 }) {
   const children = (tree.childrenOf.get(node.id) ?? []).filter((c) => !c.is_archived);
-  const daysLeft = deadlineDaysAway(ctx.today, node.display_end, ctx.calendar);
-  const deadlineLabel =
-    daysLeft === null
+  // Node đã đóng thì hiện trạng thái thay cho đếm ngược — “Chưa có hạn” trên một việc đã hoàn
+  // thành là sai, mà đếm ngược trên nó cũng vô nghĩa.
+  const open = isOpen(node);
+  const daysLeft = open ? deadlineDaysAway(ctx.today, deadlineDateOf(node), ctx.calendar) : null;
+  const deadlineLabel = !open
+    ? (WORK_STATUS_BY_CODE[node.status]?.label ?? EMPTY)
+    : daysLeft === null
       ? 'Chưa có hạn'
-      : daysLeft < 0
-        ? `Quá hạn ${Math.abs(daysLeft)} ngày`
-        : daysLeft === 0
-          ? 'Đến hạn hôm nay'
-          : `Còn ${daysLeft} ngày`;
+      : formatDaysLeft(daysLeft);
   const titleClass =
     depth === 0
       ? 'text-base font-semibold'
