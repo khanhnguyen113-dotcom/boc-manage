@@ -48,7 +48,7 @@ export default async function PortalLayout({ children }: { children: React.React
           {children}
         </main>
 
-        <footer className="border-t border-[var(--border)] px-6 py-4 text-[11px] text-[var(--text-subtle)]">
+        <footer data-portal-chrome="footer" className="border-t border-[var(--border)] px-6 py-4 text-[11px] text-[var(--text-subtle)]">
           BOC Control Tower · Dữ liệu tính theo múi giờ Asia/Ho_Chi_Minh · Lịch làm việc và ngưỡng
           tải lấy từ Tham số hệ thống
         </footer>

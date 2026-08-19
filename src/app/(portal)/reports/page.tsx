@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { FileDown, ShieldCheck } from 'lucide-react';
+import { FileDown, FileText, ShieldCheck } from 'lucide-react';
 
 import { Select } from '@/components/ui/form';
 
@@ -92,6 +92,15 @@ export default async function ReportsPage({
                 Xuất XLSX
               </ButtonLink>
             ) : null}
+            <ButtonLink
+              href={`/reports/submission?period=${period}${unitId ? `&unit=${encodeURIComponent(unitId)}` : ''}`}
+              variant="secondary"
+              size="sm"
+              prefetch={false}
+            >
+              <FileText aria-hidden className="size-4" />
+              Tạo tờ trình PDF
+            </ButtonLink>
           </div>
         }
       />

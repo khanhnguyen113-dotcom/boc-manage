@@ -7,6 +7,8 @@ import { formatDateTime, formatHours } from '@/lib/format';
 import { requireUser } from '@/server/auth/current-user';
 import { getBocContext } from '@/server/services/context';
 
+import { PasswordForm } from './password-form';
+
 export const metadata: Metadata = { title: 'Hồ sơ' };
 
 /**
@@ -51,6 +53,8 @@ export default async function ProfilePage() {
           />
         </CardBody>
       </Card>
+
+      <PasswordForm />
 
       <Card>
         <CardHeader

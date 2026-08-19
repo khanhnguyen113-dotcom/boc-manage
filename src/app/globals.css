@@ -85,6 +85,37 @@
   --radius-lg: 14px;
 }
 
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  body:has(.submission-report) [data-portal-chrome],
+  body:has(.submission-report) .print-hidden {
+    display: none !important;
+  }
+
+  body:has(.submission-report),
+  body:has(.submission-report) main {
+    background: white !important;
+    color: black !important;
+  }
+
+  body:has(.submission-report) main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .submission-report {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+  }
+}
+
 /* Chế độ tối do người dùng chủ động chọn; mặc định luôn là giao diện sáng dễ đọc. */
 :root[data-theme='dark'] {
     --canvas: #0c0e13;

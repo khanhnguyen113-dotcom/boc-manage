@@ -60,6 +60,7 @@ export const CYCLE_VALUES = ['WEEK', 'MONTH', 'QUARTER', 'YEAR'] as const;
 export const ALLOCATION_UNIT_VALUES = ['DAY', 'WEEK'] as const;
 export const DATA_QUALITY_VALUES = ['VALID', 'INCOMPLETE', 'INVALID'] as const;
 export const EXECUTION_STATUS_VALUES = ['NOT_DONE', 'IN_PROGRESS', 'COMPLETED', 'SKIPPED'] as const;
+export const COMPLETION_APPROVAL_VALUES = ['NONE', 'PENDING', 'APPROVED', 'REJECTED'] as const;
 
 export const TABLES = {
   profiles: {
@@ -217,11 +218,28 @@ export const TABLES = {
       allocation_hours: { kind: 'float', min: 0 },
       completed_at: { kind: 'datetime', businessDate: true },
       result_link: { kind: 'varchar', size: 2000 },
+      completion_approval_status: {
+        kind: 'enum',
+        values: COMPLETION_APPROVAL_VALUES,
+        required: true,
+        default: 'NONE',
+      },
+      submitted_completed_at: { kind: 'datetime', businessDate: true },
+      submitted_result_link: { kind: 'varchar', size: 2000 },
+      completion_submitted_by: id36,
+      completion_submitted_at: { kind: 'datetime' },
+      completion_reviewed_by: id36,
+      completion_reviewed_at: { kind: 'datetime' },
+      completion_review_note: { kind: 'text' },
       data_quality_status: { kind: 'enum', values: DATA_QUALITY_VALUES, required: true },
       data_quality_codes: { kind: 'varchar', size: 60, array: true },
       is_leaf: { kind: 'boolean', required: true, default: true },
       is_archived: { kind: 'boolean', required: true, default: false },
       archived_at: { kind: 'datetime' },
+      is_deleted: { kind: 'boolean', required: true, default: false },
+      deleted_at: { kind: 'datetime' },
+      deleted_by: id36,
+      delete_reason: { kind: 'text' },
       cancel_reason: { kind: 'text' },
       created_by: id36Required,
       updated_by: id36Required,

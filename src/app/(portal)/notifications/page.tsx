@@ -23,6 +23,9 @@ const TYPE_LABELS: Record<NotificationType, { label: string; tone: 'danger' | 'w
   CHILD_OUTSIDE_PARENT: { label: 'Con vượt khung cha', tone: 'warning' },
   MISSING_DATA: { label: 'Thiếu dữ liệu', tone: 'warning' },
   STATUS_CHANGED: { label: 'Đổi trạng thái', tone: 'success' },
+  COMPLETION_SUBMITTED: { label: 'Chờ duyệt kết quả', tone: 'warning' },
+  COMPLETION_APPROVED: { label: 'Đã duyệt kết quả', tone: 'success' },
+  COMPLETION_REJECTED: { label: 'Trả lại kết quả', tone: 'danger' },
   IMPORT_DONE: { label: 'Import xong', tone: 'muted' },
   EXPORT_DONE: { label: 'Export xong', tone: 'muted' },
 };

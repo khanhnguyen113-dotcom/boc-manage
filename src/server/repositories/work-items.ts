@@ -246,7 +246,8 @@ export async function listAllWorkItems(): Promise<WorkItem[]> {
 
 export async function getWorkItem(id: string): Promise<WorkItem | null> {
   const store = await getStore();
-  return store.get<Row & WorkItem>('work_items', id);
+  const item = await store.get<Row & WorkItem>('work_items', id);
+  return item?.is_deleted ? null : item;
 }
 
 export async function getWorkItemByCode(code: string): Promise<WorkItem | null> {

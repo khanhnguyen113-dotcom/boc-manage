@@ -8,6 +8,7 @@ import {
   computePath,
   descendantsOf,
   postOrder,
+  rebaseSubtree,
   requiredParentLevel,
   validateParentRelation,
 } from '@/domain/hierarchy';
@@ -154,5 +155,35 @@ describe('computePath', () => {
   it('node con nối tiếp path của cha', () => {
     const parent = makeWorkItem({ path: '/HHL3CT03' });
     expect(computePath('HHL4DL01', parent)).toBe('/HHL3CT03/HHL4DL01');
+  });
+});
+
+describe('di chuyển cả nhánh và đánh lại cấp', () => {
+  it('mọi công việc con đi theo và tăng cấp đúng một lớp', () => {
+    const items = makeSampleTree();
+    const newParent = makeWorkItem({
+      id: 'new-parent',
+      code: 'NEW-L5',
+      level: 5,
+      root_id: 'new-root',
+      path: '/NEW-L3/NEW-L4/NEW-L5',
+      year: 2027,
+      management_level_id: 'ml-new',
+      category_id: 'cat-new',
+    });
+    const tree = buildTreeIndex([...items, newParent]);
+    const current = tree.byId.get('l4')!;
+    const plan = rebaseSubtree(tree, current, newParent);
+
+    expect(plan.map((node) => [node.id, node.level])).toEqual([
+      ['l4', 6],
+      ['l5a', 7],
+      ['l5b', 7],
+    ]);
+    expect(plan.find((node) => node.id === 'l5a')?.path).toBe(
+      `${newParent.path}/${current.code}/${tree.byId.get('l5a')!.code}`,
+    );
+    expect(plan.every((node) => node.root_id === 'new-root')).toBe(true);
+    expect(plan.every((node) => node.year === 2027 && node.category_id === 'cat-new')).toBe(true);
   });
 });

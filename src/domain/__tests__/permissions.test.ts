@@ -34,6 +34,16 @@ describe('effective capability', () => {
     expect(hasCapability(a, 'work.create_l3')).toBe(true);
     expect(hasCapability(a, 'work.create_child')).toBe(true);
     expect(hasCapability(a, 'work.assign')).toBe(false);
+    expect(hasCapability(a, 'work.submit_completion')).toBe(true);
+    expect(hasCapability(a, 'work.approve_completion')).toBe(true);
+    expect(hasCapability(a, 'work.delete')).toBe(false);
+  });
+
+  it('chỉ cấp quản lý trở lên có capability xóa công việc', () => {
+    expect(hasCapability(actor({ roles: ['unit_manager'] }), 'work.delete')).toBe(true);
+    expect(hasCapability(actor({ roles: ['business_admin'] }), 'work.delete')).toBe(true);
+    expect(hasCapability(actor({ roles: ['boc_director'] }), 'work.delete')).toBe(true);
+    expect(hasCapability(actor({ roles: ['system_admin'] }), 'work.delete')).toBe(true);
   });
 
   it('capability cấp thêm cho riêng user có hiệu lực', () => {

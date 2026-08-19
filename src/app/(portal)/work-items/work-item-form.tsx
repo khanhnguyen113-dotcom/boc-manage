@@ -394,7 +394,7 @@ export function WorkItemForm(props: WorkItemFormProps) {
         <CardBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Trạng thái" htmlFor="status" required error={err('status')}>
             <Select id="status" name="status" defaultValue={item?.status ?? 'NOT_SCHEDULED'} required>
-              {WORK_STATUSES.map((option) => (
+              {WORK_STATUSES.filter((option) => option.code !== 'COMPLETED').map((option) => (
                 <option key={option.code} value={option.code}>
                   {option.label}
                 </option>

@@ -60,6 +60,7 @@ import { baselineWarningsFor } from '@/server/services/work-items';
 import { CommentForm } from './comment-form';
 import { ExecutionLogForm } from './execution-log-form';
 import { StatusPanel } from './status-panel';
+import { CompletionPanel } from './completion-panel';
 
 type Tab = 'overview' | 'children' | 'logs' | 'comments' | 'files' | 'activity' | 'audit';
 
@@ -126,6 +127,16 @@ export default async function WorkItemDetailPage({
   const load = computeItemLoad(item, ctx.today, ctx.calendar, ctx.capacity);
   const inconsistencies = statusWarnings(item, ctx.today);
   const canEdit = user.capabilities.has('work.edit_core');
+  const canSubmitCompletion =
+    user.capabilities.has('work.submit_completion') && item.primary_assignee_id === user.actor.user_id;
+  const canReviewCompletion =
+    user.capabilities.has('work.approve_completion') &&
+    item.completion_submitted_by !== user.actor.user_id &&
+    (item.lead_user_id === user.actor.user_id ||
+      (user.actor.roles.some((role) =>
+        ['unit_manager', 'business_admin', 'boc_director', 'system_admin'].includes(role),
+      ) &&
+        (user.scope.all || user.scope.unit_ids.has(item.owning_unit_id))));
 
   return (
     <div className="space-y-5">
@@ -356,7 +367,15 @@ export default async function WorkItemDetailPage({
               </CardBody>
             </Card>
 
-            <StatusPanel item={item} today={ctx.today} canComplete={user.capabilities.has('work.complete')} />
+            <CompletionPanel
+              item={item}
+              today={ctx.today}
+              canSubmit={canSubmitCompletion}
+              canReview={canReviewCompletion}
+              submitterName={ctx.names.userName(item.completion_submitted_by)}
+              reviewerName={ctx.names.userName(item.completion_reviewed_by)}
+            />
+            <StatusPanel item={item} />
           </div>
         </div>
       ) : null}

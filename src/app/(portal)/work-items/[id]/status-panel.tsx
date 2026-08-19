@@ -5,7 +5,7 @@ import { useActionState, useState } from 'react';
 import { changeStatusAction } from '@/app/(portal)/work-items/actions';
 import { EMPTY_FORM_STATE } from '@/app/(portal)/work-items/form-state';
 import { Card, CardBody, CardHeader } from '@/components/ui/primitives';
-import { Field, FormError, Input, Select, SubmitButton, Textarea } from '@/components/ui/form';
+import { Field, FormError, Select, SubmitButton, Textarea } from '@/components/ui/form';
 import { WORK_STATUS_BY_CODE } from '@/domain/catalogs';
 import { allowedNextStatuses, isSensitiveTransition } from '@/domain/status';
 import type { WorkItem, WorkStatus } from '@/domain/types';
@@ -19,22 +19,17 @@ import type { WorkItem, WorkStatus } from '@/domain/types';
  */
 export function StatusPanel({
   item,
-  today,
-  canComplete,
 }: {
   item: WorkItem;
-  today: string;
-  canComplete: boolean;
 }) {
   const [state, formAction] = useActionState(changeStatusAction, EMPTY_FORM_STATE);
   const [target, setTarget] = useState<WorkStatus>(item.status);
 
-  const options = allowedNextStatuses(item.status);
+  const options = allowedNextStatuses(item.status).filter((status) => status !== 'COMPLETED');
   if (options.length === 0) return null;
 
   const sensitive = isSensitiveTransition(item.status, target);
   const requiresReason = sensitive || target === 'CANCELLED';
-  const requiresEvidence = target === 'COMPLETED';
 
   return (
     <Card>
@@ -58,35 +53,12 @@ export function StatusPanel({
             >
               <option value={item.status}>Giữ nguyên</option>
               {options.map((value) => (
-                <option key={value} value={value} disabled={value === 'COMPLETED' && !canComplete}>
+                <option key={value} value={value}>
                   {WORK_STATUS_BY_CODE[value].label}
-                  {value === 'COMPLETED' && !canComplete ? ' (không đủ quyền)' : ''}
                 </option>
               ))}
             </Select>
           </Field>
-
-          {requiresEvidence ? (
-            <>
-              <Field label="Ngày hoàn thành thực tế" htmlFor="completed_at" required>
-                <Input id="completed_at" name="completed_at" type="date" defaultValue={today} />
-              </Field>
-              <Field
-                label="Link kết quả"
-                htmlFor="result_link"
-                required={!item.result_link}
-                hint="Bắt buộc có link hoặc tệp kết quả (BR-STA-001)."
-              >
-                <Input
-                  id="result_link"
-                  name="result_link"
-                  type="url"
-                  defaultValue={item.result_link ?? ''}
-                  placeholder="https://…"
-                />
-              </Field>
-            </>
-          ) : null}
 
           <Field
             label="Lý do"

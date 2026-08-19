@@ -175,7 +175,7 @@ export default async function MyWorkPage() {
             />
             <ul className="divide-y divide-[var(--border)]">
               {group.items.map((item) => (
-                <WorkRow key={item.id} item={item} ctx={ctx} />
+                <WorkRow key={item.id} item={item} ctx={ctx} userId={userId} canSubmitCompletion={user.capabilities.has('work.submit_completion')} />
               ))}
             </ul>
           </Card>
@@ -188,9 +188,13 @@ export default async function MyWorkPage() {
 function WorkRow({
   item,
   ctx,
+  userId,
+  canSubmitCompletion,
 }: {
   item: WorkItem;
   ctx: Awaited<ReturnType<typeof getBocContext>>;
+  userId: string;
+  canSubmitCompletion: boolean;
 }) {
   const daysLeft = businessDaysLeft(ctx.today, item.display_end, ctx.calendar);
 
@@ -237,7 +241,7 @@ function WorkRow({
       </div>
 
       <div className="mt-3">
-        <QuickUpdate item={item} today={ctx.today} />
+        <QuickUpdate item={item} today={ctx.today} canSubmitCompletion={canSubmitCompletion && item.primary_assignee_id === userId} />
       </div>
     </li>
   );

@@ -107,6 +107,7 @@ export function Sidebar({
       ) : null}
 
       <aside
+        data-portal-chrome="sidebar"
         className={cn(
           'sticky top-0 hidden h-dvh shrink-0 border-r border-[var(--border)] bg-[var(--surface)] lg:flex lg:flex-col',
           collapsed ? 'w-16' : 'w-64',

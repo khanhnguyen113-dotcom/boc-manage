@@ -28,17 +28,17 @@ import (mục 12.5).
 |---|---|---|---|
 | BR-HIE-001 | L4 cha L3, L5 cha L4, L6 cha L5 | `domain/hierarchy.ts` `requiredParentLevel`, `validateParentRelation` | `hierarchy.test.ts` |
 | BR-HIE-002 | Chống self-parent và cycle | `validateParentRelation` (đi ngược lên gốc) | `hierarchy.test.ts` |
-| BR-HIE-003 | Con kế thừa năm, L1, L2, root | `services/work-items.ts` `createWorkItem`/`updateWorkItem` | — |
+| BR-HIE-003 | Con kế thừa năm, L1, L2, root; di chuyển node thì cả nhánh đi theo và đánh lại cấp | `rebaseSubtree` + `services/work-items.ts` `createWorkItem`/`updateWorkItem` | `hierarchy.test.ts` |
 | BR-HIE-004 | `is_leaf` = không có con active | `computeIsLeaf` | `hierarchy.test.ts` |
 | BR-HIE-005 | Chặn lưu trữ khi còn con active | `archiveWorkItem` | — |
-| BR-HIE-006 | Không hard delete | Không có API xóa; `is_archived` / `CANCELLED` | ADR-005 |
+| BR-HIE-006 | Không hard delete | `deleteWorkItemBranch` soft-delete cả nhánh, giữ audit | ADR-005, ADR-019 |
 | BR-PRO-001 | Chỉ leaf nhập tiến độ | `computeEffectiveProgress`, chặn ở `quickUpdateWorkItem` | `progress.test.ts` |
 | BR-PRO-002 | Cha = trung bình con hợp lệ | `computeEffectiveProgress` | `progress.test.ts` |
 | BR-PRO-003 | Loại `CANCELLED`, `NOT_SCHEDULED`, `SCHEDULED` | `progressExclusionFor` | `progress.test.ts` |
 | BR-PRO-004 | Loại nhóm “Công việc khác” | `CATEGORIES_EXCLUDED_FROM_PROGRESS` | `progress.test.ts` |
 | BR-PRO-005 | Cha không có con hợp lệ | `computeEffectiveProgress` nhánh `NO_DATA` | `progress.test.ts` |
 | BR-PRO-006 | Recalc lên gốc, idempotent | `domain/recalc.ts` + `recalculateAndPersist` | `recalc.test.ts` |
-| BR-STA-001 | Hoàn thành cần 100% + ngày + output + evidence | `completionBlockers` | `status.test.ts` |
+| BR-STA-001 | Người thực hiện gửi ngày + evidence; Lead/quản lý xác nhận mới hoàn thành | `completionBlockers`, `submitWorkItemCompletion`, `reviewWorkItemCompletion` | `status.test.ts`, ADR-018 |
 | BR-STA-002…007 | Cảnh báo trạng thái không nhất quán | `statusWarnings` | `status.test.ts` |
 | BR-STA-008 | Reopen cần quyền + lý do | `isSensitiveTransition` + `changeWorkItemStatus` | `status.test.ts` |
 | BR-DAT-001…004 | Ngày gốc vs hiển thị | `computeDisplayDates` | `dates.test.ts` |
@@ -89,7 +89,7 @@ import (mục 12.5).
 | 6.6 | Calendar & deadlines | `/calendar` |
 | 6.7 | Comments, mentions, activity | tab “Bình luận”, “Hoạt động” |
 | 6.8 | Notifications | `/notifications` + chuông trên topbar |
-| 6.9 / 11 | Reports & export | `/reports`, `/reports/data-health`, `/api/exports/*` |
+| 6.9 / 11 | Reports & export | `/reports`, `/reports/submission` (tờ trình A4/PDF), `/reports/data-health`, `/api/exports/*` |
 | 6.10 | Admin | `/admin/{users,organization,catalogs,holidays,settings,imports,audit}` |
 | 18.2 | Health/readiness | `/api/health`, `/api/ready` |
 
@@ -97,7 +97,7 @@ import (mục 12.5).
 
 | Tiêu chí | Kiểm chứng |
 |---|---|
-| Tạo từ L3 xuống không giới hạn độ sâu, chặn sai quan hệ/cycle | `hierarchy.test.ts` (20 test) + validation trong form |
+| Tạo từ L3 xuống không giới hạn độ sâu, chặn sai quan hệ/cycle, chuyển cả nhánh | `hierarchy.test.ts` (21 test) + validation trong form |
 | Progress chỉ nhập leaf, roll-up đúng | `progress.test.ts`, `recalc.test.ts` |
 | Baseline/display dates và cảnh báo con | `dates.test.ts` + banner cảnh báo ở trang chi tiết |
 | Status/transition/completion evidence | `status.test.ts` + `StatusPanel` chỉ hiện bước hợp lệ |
@@ -105,7 +105,7 @@ import (mục 12.5).
 | Workload không kết luận khi thiếu dữ liệu | `workload.test.ts` + badge “Chưa đủ dữ liệu” |
 | Báo cáo đối soát đúng | `metrics.test.ts` + sheet “Filters & Definitions” trong file export |
 | Drill-down từ KPI về đúng record | `filters.test.ts` + mọi `KpiCard` đều có `href` |
-| Mỗi role/capability/scope pass matrix | `permissions.test.ts` (20 test) |
+| Mỗi role/capability/scope pass matrix | `permissions.test.ts` (23 test) |
 | Direct API/client tampering không bypass | `canReadWorkItem`/`canWriteWorkItem` gọi ở service, không ở component |
 | Revoke/inactive hiệu lực request kế tiếp | `effectiveCapabilities` trả rỗng khi `is_active = false` |
 | Export tuân thủ scope | `/api/exports/*` dùng chung `searchWorkItems(query, scope)` |

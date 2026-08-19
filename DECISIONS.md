@@ -209,9 +209,34 @@ tắt, không cần sửa mã.
 
 ---
 
+## ADR-018 — Hoàn thành công việc theo luồng gửi kết quả và xác nhận
+
+**Bối cảnh.** Ngày hoàn thành thực tế và kết quả phải do người thực hiện cung cấp, nhưng chỉ được
+ghi nhận vào báo cáo sau khi người phụ trách hoặc quản lý xác nhận.
+
+**Quyết định.** Tách thành hai mutation độc lập: `submitWorkItemCompletion` chỉ cho
+`primary_assignee_id`; `reviewWorkItemCompletion` chỉ cho Lead hoặc quản lý trong scope và chặn
+người gửi tự duyệt. Dữ liệu chờ duyệt nằm ở `submitted_*`; chỉ khi duyệt mới sao chép sang
+`completed_at`/`result_link` và đổi `status=COMPLETED`. Trả lại bắt buộc có lý do và cho phép gửi
+lại. Mọi bước có audit, activity và notification.
+
+---
+
+## ADR-019 — Xóa công việc là soft-delete cả nhánh
+
+**Bối cảnh.** Quản lý cần nút xóa trong màn hình chỉnh sửa, nhưng hard-delete sẽ phá audit và làm
+mất khả năng đối soát báo cáo cũ.
+
+**Quyết định.** Capability `work.delete` chỉ cấp từ `unit_manager` trở lên. Xóa đánh dấu đồng thời
+`is_deleted=true` và `is_archived=true` cho node cùng toàn bộ hậu duệ, bắt buộc lý do + chuỗi xác
+nhận `XOA`. Bản ghi biến mất khỏi các màn hình nhưng vẫn còn trong kho dữ liệu và audit.
+
+---
+
 ## Nhật ký phê duyệt
 
 | ADR | Ngày | Người quyết định | Ghi chú |
 |---|---|---|---|
 | ADR-001…015 | 12/08/2026 | Đội phát triển | Quyết định kỹ thuật, chờ PO phản hồi các mục trong `NEED_CONFIRMATION.md` |
 | ADR-016…017 | 12/08/2026 | Đội phát triển | Phát sinh khi đưa dữ liệu thật lên Appwrite self-hosted của BOC |
+| ADR-018…019 | 19/08/2026 | BOC | Làm rõ luồng duyệt hoàn thành và quyền xóa công việc |

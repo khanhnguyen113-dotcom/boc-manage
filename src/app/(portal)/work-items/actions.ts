@@ -6,8 +6,11 @@ import {
   changeStatusSchema,
   commentSchema,
   createWorkItemSchema,
+  deleteWorkItemSchema,
   executionLogSchema,
   quickUpdateSchema,
+  reviewCompletionSchema,
+  submitCompletionSchema,
   updateWorkItemSchema,
 } from '@/schemas/work-item';
 import { requireUser } from '@/server/auth/current-user';
@@ -20,7 +23,10 @@ import {
   archiveWorkItem,
   changeWorkItemStatus,
   createWorkItem,
+  deleteWorkItemBranch,
   quickUpdateWorkItem,
+  reviewWorkItemCompletion,
+  submitWorkItemCompletion,
   updateWorkItem,
 } from '@/server/services/work-items';
 
@@ -170,6 +176,77 @@ export async function changeStatusAction(
     const result = toActionResult(error);
     return { error: result.message, details: result.details?.blockers as FormState['details'] };
   }
+}
+
+export async function submitCompletionAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = submitCompletionSchema.safeParse({
+    id: String(formData.get('id') ?? ''),
+    expected_version: Number(formData.get('expected_version')),
+    completed_at: String(formData.get('completed_at') ?? ''),
+    result_link: optionalString(formData.get('result_link')),
+    note: optionalString(formData.get('note')),
+  });
+  if (!parsed.success) return zodToState(parsed.error.issues);
+  try {
+    await submitWorkItemCompletion(user, parsed.data);
+    return { error: null, success: 'Đã gửi kết quả. Công việc đang chờ người phụ trách xác nhận.' };
+  } catch (error) {
+    const result = toActionResult(error);
+    return { error: result.message, details: result.details?.blockers as FormState['details'] };
+  }
+}
+
+export async function reviewCompletionAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = reviewCompletionSchema.safeParse({
+    id: String(formData.get('id') ?? ''),
+    expected_version: Number(formData.get('expected_version')),
+    decision: String(formData.get('decision') ?? ''),
+    note: optionalString(formData.get('note')),
+  });
+  if (!parsed.success) return zodToState(parsed.error.issues);
+  try {
+    await reviewWorkItemCompletion(user, parsed.data);
+    return {
+      error: null,
+      success: parsed.data.decision === 'APPROVE' ? 'Đã xác nhận hoàn thành.' : 'Đã trả lại kết quả cho người thực hiện.',
+    };
+  } catch (error) {
+    const result = toActionResult(error);
+    return { error: result.message, details: result.details?.blockers as FormState['details'] };
+  }
+}
+
+export async function deleteWorkItemAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = deleteWorkItemSchema.safeParse({
+    id: String(formData.get('id') ?? ''),
+    expected_version: Number(formData.get('expected_version')),
+    reason: String(formData.get('reason') ?? ''),
+    confirmation: String(formData.get('confirmation') ?? ''),
+  });
+  if (!parsed.success) return zodToState(parsed.error.issues);
+  try {
+    await deleteWorkItemBranch(
+      user,
+      parsed.data.id,
+      parsed.data.expected_version,
+      parsed.data.reason,
+    );
+  } catch (error) {
+    return { error: toActionResult(error).message };
+  }
+  redirect('/work-items?deleted=1');
 }
 
 export async function archiveAction(_prev: FormState, formData: FormData): Promise<FormState> {

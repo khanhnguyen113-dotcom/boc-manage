@@ -104,6 +104,54 @@ export function computeDepth(level: WorkLevel): number {
   return Math.max(0, level - MIN_LEVEL);
 }
 
+export interface RebasedWorkNode {
+  id: string;
+  level: WorkLevel;
+  depth: number;
+  path: string;
+  root_id: string;
+  year: number;
+  management_level_id: string;
+  category_id: string;
+}
+
+/**
+ * Lập kế hoạch đổi cấp cho toàn bộ nhánh sau khi chuyển node gốc sang cha mới.
+ * Mỗi cạnh trong nhánh luôn tăng đúng một lớp, kể cả dữ liệu cũ từng lệch cấp.
+ */
+export function rebaseSubtree(
+  tree: TreeIndex,
+  root: WorkItem,
+  newParent: WorkItem | null,
+): RebasedWorkNode[] {
+  const rootLevel = newParent ? newParent.level + 1 : MIN_LEVEL;
+  const rootPath = computePath(root.code, newParent);
+  const rootId = newParent?.root_id ?? root.id;
+  const year = newParent?.year ?? root.year;
+  const managementLevelId = newParent?.management_level_id ?? root.management_level_id;
+  const categoryId = newParent?.category_id ?? root.category_id;
+  const result: RebasedWorkNode[] = [];
+
+  const walk = (node: WorkItem, level: WorkLevel, path: string) => {
+    result.push({
+      id: node.id,
+      level,
+      depth: computeDepth(level),
+      path,
+      root_id: rootId,
+      year,
+      management_level_id: managementLevelId,
+      category_id: categoryId,
+    });
+    for (const child of tree.childrenOf.get(node.id) ?? []) {
+      walk(child, level + 1, `${path}/${child.code}`);
+    }
+  };
+
+  walk(root, rootLevel, rootPath);
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Chỉ mục cây
 // ---------------------------------------------------------------------------

@@ -58,6 +58,21 @@ export const changeUserPasswordSchema = z
     message: 'Mật khẩu xác nhận không khớp',
   });
 
+export const changeOwnPasswordSchema = z
+  .object({
+    current_password: z.string().min(1, 'Nhập mật khẩu hiện tại').max(256),
+    password: z.string().min(8, 'Mật khẩu mới tối thiểu 8 ký tự').max(128),
+    password_confirm: z.string().min(8),
+  })
+  .refine((value) => value.password === value.password_confirm, {
+    path: ['password_confirm'],
+    message: 'Mật khẩu xác nhận không khớp',
+  })
+  .refine((value) => value.password !== value.current_password, {
+    path: ['password'],
+    message: 'Mật khẩu mới phải khác mật khẩu hiện tại',
+  });
+
 export const deleteUserSchema = z.object({
   user_id: z.string().min(1),
   confirmation: z.literal('XOA', { message: 'Nhập XOA để xác nhận xóa vĩnh viễn' }),

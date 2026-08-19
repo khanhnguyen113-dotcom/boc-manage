@@ -7,6 +7,7 @@
 
 export interface FormState {
   error: string | null;
+  success?: string | null;
   fieldErrors?: Record<string, string>;
   details?: { code: string; message: string }[];
 }

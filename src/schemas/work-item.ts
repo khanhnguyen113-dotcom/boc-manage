@@ -122,6 +122,33 @@ export const changeStatusSchema = z.object({
   result_link: safeUrl.optional(),
 });
 
+export const submitCompletionSchema = z.object({
+  id: z.string().min(1),
+  expected_version: z.number().int().min(1),
+  completed_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Chọn ngày hoàn thành thực tế'),
+  result_link: safeUrl,
+  note: z.string().trim().max(2000).nullable(),
+});
+
+export const reviewCompletionSchema = z
+  .object({
+    id: z.string().min(1),
+    expected_version: z.number().int().min(1),
+    decision: z.enum(['APPROVE', 'REJECT']),
+    note: z.string().trim().max(2000).nullable(),
+  })
+  .refine((value) => value.decision !== 'REJECT' || Boolean(value.note), {
+    path: ['note'],
+    message: 'Trả lại kết quả bắt buộc ghi rõ lý do',
+  });
+
+export const deleteWorkItemSchema = z.object({
+  id: z.string().min(1),
+  expected_version: z.number().int().min(1),
+  reason: z.string().trim().min(3, 'Ghi rõ lý do xóa').max(500),
+  confirmation: z.literal('XOA', { message: 'Nhập XOA để xác nhận' }),
+});
+
 export const executionLogSchema = z
   .object({
     work_item_id: z.string().min(1),

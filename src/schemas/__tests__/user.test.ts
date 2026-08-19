@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { changeUserPasswordSchema, createUserSchema, updateUserSchema } from '../user';
+import {
+  changeOwnPasswordSchema,
+  changeUserPasswordSchema,
+  createUserSchema,
+  updateUserSchema,
+} from '../user';
 
 const account = {
   full_name: 'Nguyễn Văn A',
@@ -42,5 +47,22 @@ describe('user account schemas', () => {
       password_confirm: 'khong-khop-123',
     });
     expect(result.success).toBe(false);
+  });
+
+  it('người dùng tự đổi mật khẩu phải nhập đúng xác nhận và mật khẩu mới khác mật khẩu cũ', () => {
+    expect(
+      changeOwnPasswordSchema.safeParse({
+        current_password: 'mat-khau-cu',
+        password: 'mat-khau-moi',
+        password_confirm: 'mat-khau-moi',
+      }).success,
+    ).toBe(true);
+    expect(
+      changeOwnPasswordSchema.safeParse({
+        current_password: 'mat-khau-cu',
+        password: 'mat-khau-cu',
+        password_confirm: 'mat-khau-cu',
+      }).success,
+    ).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T04:08:25.693Z",
+  "generated_at": "2026-08-19T08:12:07.928Z",
   "database_id": "boc_control_tower",
   "tables": [
     {
@@ -617,6 +617,50 @@
           "size": 2000
         },
         {
+          "key": "completion_approval_status",
+          "kind": "enum",
+          "values": [
+            "NONE",
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "required": true,
+          "default": "NONE"
+        },
+        {
+          "key": "submitted_completed_at",
+          "kind": "datetime",
+          "businessDate": true
+        },
+        {
+          "key": "submitted_result_link",
+          "kind": "varchar",
+          "size": 2000
+        },
+        {
+          "key": "completion_submitted_by",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "completion_submitted_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "completion_reviewed_by",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "completion_reviewed_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "completion_review_note",
+          "kind": "text"
+        },
+        {
           "key": "data_quality_status",
           "kind": "enum",
           "values": [
@@ -647,6 +691,25 @@
         {
           "key": "archived_at",
           "kind": "datetime"
+        },
+        {
+          "key": "is_deleted",
+          "kind": "boolean",
+          "required": true,
+          "default": false
+        },
+        {
+          "key": "deleted_at",
+          "kind": "datetime"
+        },
+        {
+          "key": "deleted_by",
+          "kind": "varchar",
+          "size": 36
+        },
+        {
+          "key": "delete_reason",
+          "kind": "text"
         },
         {
           "key": "cancel_reason",

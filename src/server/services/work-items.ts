@@ -9,6 +9,8 @@ import {
   computeDepth,
   computePath,
   computeRootId,
+  descendantsOf,
+  rebaseSubtree,
   validateParentRelation,
 } from '@/domain/hierarchy';
 import {
@@ -201,6 +203,9 @@ export async function createWorkItem(
   user: SessionUser,
   payload: CreateWorkItemPayload,
 ): Promise<WorkItem> {
+  if (payload.status === 'COMPLETED') {
+    throw validation('Công việc mới không thể ở trạng thái Hoàn thành. Hãy tạo, giao việc rồi dùng luồng gửi kết quả.');
+  }
   const capability: Capability = payload.level === 3 ? 'work.create_l3' : 'work.create_child';
   if (!hasCapability(user.actor, capability)) throw forbidden();
 
@@ -264,11 +269,23 @@ export async function createWorkItem(
       allocation_hours: payload.allocation_hours,
       completed_at: null,
       result_link: payload.result_link,
+      completion_approval_status: 'NONE',
+      submitted_completed_at: null,
+      submitted_result_link: null,
+      completion_submitted_by: null,
+      completion_submitted_at: null,
+      completion_reviewed_by: null,
+      completion_reviewed_at: null,
+      completion_review_note: null,
       data_quality_status: 'VALID',
       data_quality_codes: [],
       is_leaf: true,
       is_archived: false,
       archived_at: null,
+      is_deleted: false,
+      deleted_at: null,
+      deleted_by: null,
+      delete_reason: null,
       cancel_reason: null,
       created_by: user.actor.user_id,
       updated_by: user.actor.user_id,
@@ -359,10 +376,12 @@ export async function updateWorkItem(
   const ctx = await getBocContext();
   const store = await getStore();
 
-  const parentChanged = current.parent_id !== payload.parent_id;
-  if (parentChanged) {
+  const hierarchyChanged = current.parent_id !== payload.parent_id || current.level !== payload.level;
+  let hierarchyPlan: ReturnType<typeof rebaseSubtree> | null = null;
+  if (hierarchyChanged) {
     if (!hasCapability(user.actor, 'work.edit_core')) throw forbidden();
     const parent = payload.parent_id ? await getWorkItem(payload.parent_id) : null;
+    if (parent) await assertCanWrite(user, parent, 'work.edit_core');
     const all = await store.all<Row & WorkItem>('work_items');
     const byId = new Map(all.map((i) => [i.id, i]));
     const violation = validateParentRelation({
@@ -375,19 +394,24 @@ export async function updateWorkItem(
     if (!payload.reason?.trim()) {
       throw validation('Đổi công việc cha là thay đổi phạm vi — bắt buộc ghi lý do.');
     }
+    hierarchyPlan = rebaseSubtree(buildTreeIndex(all), current, parent);
+    if (hierarchyPlan.some((node) => node.path.length > 500)) {
+      throw validation('Nhánh sau khi di chuyển tạo đường dẫn quá dài. Hãy chọn công việc cha gần gốc hơn.');
+    }
   }
 
   const parent = payload.parent_id ? await getWorkItem(payload.parent_id) : null;
 
   const patch: Partial<WorkItem> = {
-    level: payload.level,
+    level: hierarchyPlan?.[0]?.level ?? payload.level,
     parent_id: payload.parent_id,
-    root_id: computeRootId(current.id, parent),
-    path: computePath(current.code, parent),
-    depth: computeDepth(payload.level),
-    year: parent?.year ?? payload.year,
-    management_level_id: parent?.management_level_id ?? payload.management_level_id,
-    category_id: parent?.category_id ?? payload.category_id,
+    root_id: hierarchyPlan?.[0]?.root_id ?? computeRootId(current.id, parent),
+    path: hierarchyPlan?.[0]?.path ?? computePath(current.code, parent),
+    depth: hierarchyPlan?.[0]?.depth ?? computeDepth(payload.level),
+    year: hierarchyPlan?.[0]?.year ?? parent?.year ?? payload.year,
+    management_level_id:
+      hierarchyPlan?.[0]?.management_level_id ?? parent?.management_level_id ?? payload.management_level_id,
+    category_id: hierarchyPlan?.[0]?.category_id ?? parent?.category_id ?? payload.category_id,
     title: payload.title,
     description: payload.description,
     expected_output: payload.expected_output,
@@ -412,7 +436,7 @@ export async function updateWorkItem(
   const updated = await store.transaction(async (tx) => {
     const row = await tx.update<Row & WorkItem>('work_items', current.id, patch);
 
-    if (parentChanged) await syncDescendantPaths(tx, row);
+    if (hierarchyPlan) await syncDescendantHierarchy(tx, hierarchyPlan.slice(1), user.actor.user_id);
 
     await recalculateAndPersist(
       tx,
@@ -474,25 +498,32 @@ export async function updateWorkItem(
   return updated;
 }
 
-/** Sau khi reparent, `path`/`root_id`/`depth` của cả nhánh con phải đi theo. */
-async function syncDescendantPaths(tx: DataStore, root: WorkItem): Promise<void> {
-  const all = await tx.all<Row & WorkItem>('work_items');
-  const tree = buildTreeIndex(all);
-  const updates: { id: string; patch: Record<string, unknown> }[] = [];
-
-  const walk = (node: WorkItem) => {
-    for (const child of tree.childrenOf.get(node.id) ?? []) {
-      const path = `${node.path}/${child.code}`;
-      updates.push({
-        id: child.id,
-        patch: { path, root_id: node.root_id, depth: computeDepth(child.level) },
-      });
-      walk({ ...child, path, root_id: node.root_id });
-    }
-  };
-  walk(root);
-
-  if (updates.length > 0) await tx.updateMany('work_items', updates);
+/** Sau khi reparent, toàn bộ cấp/path/root và phân loại kế thừa của nhánh phải đi theo. */
+async function syncDescendantHierarchy(
+  tx: DataStore,
+  plan: ReturnType<typeof rebaseSubtree>,
+  actorUserId: string,
+): Promise<void> {
+  if (plan.length === 0) return;
+  const currentRows = await tx.all<Row & WorkItem>('work_items');
+  const byId = new Map(currentRows.map((item) => [item.id, item]));
+  await tx.updateMany(
+    'work_items',
+    plan.map((node) => ({
+      id: node.id,
+      patch: {
+        level: node.level,
+        depth: node.depth,
+        path: node.path,
+        root_id: node.root_id,
+        year: node.year,
+        management_level_id: node.management_level_id,
+        category_id: node.category_id,
+        updated_by: actorUserId,
+        version: (byId.get(node.id)?.version ?? 0) + 1,
+      },
+    })),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -527,6 +558,9 @@ export async function quickUpdateWorkItem(
   }
 
   const nextStatus = payload.status ?? current.status;
+  if (nextStatus === 'COMPLETED') {
+    throw validation('Hãy dùng luồng “Gửi hoàn thành” để người phụ trách xác nhận kết quả.');
+  }
   if (nextStatus !== current.status) {
     if (!canTransition(current.status, nextStatus)) {
       throw businessRule(
@@ -538,21 +572,13 @@ export async function quickUpdateWorkItem(
     }
   }
 
-  if (nextStatus === 'COMPLETED') {
-    await assertCompletionAllowed(user, current, {
-      progress: payload.manual_progress,
-      completed_at: payload.completed_at ?? null,
-      result_link: payload.result_link ?? current.result_link,
-    });
-  }
-
   const ctx = await getBocContext();
   const store = await getStore();
 
   const patch: Partial<WorkItem> = {
     manual_progress: payload.manual_progress,
     status: nextStatus,
-    completed_at: nextStatus === 'COMPLETED' ? (payload.completed_at ?? ctx.today) : null,
+    completed_at: null,
     result_link: payload.result_link ?? current.result_link,
     updated_by: user.actor.user_id,
     version: current.version + 1,
@@ -607,6 +633,217 @@ export async function quickUpdateWorkItem(
 }
 
 // ---------------------------------------------------------------------------
+// Gửi kết quả hoàn thành → người phụ trách/quản lý xác nhận
+// ---------------------------------------------------------------------------
+
+export interface SubmitCompletionPayload {
+  id: string;
+  expected_version: number;
+  completed_at: string;
+  result_link: string | null;
+  note: string | null;
+}
+
+export async function submitWorkItemCompletion(
+  user: SessionUser,
+  payload: SubmitCompletionPayload,
+): Promise<WorkItem> {
+  const current = await getWorkItem(payload.id);
+  if (!current) throw notFound('Không tìm thấy công việc.');
+  if (!hasCapability(user.actor, 'work.submit_completion')) throw forbidden();
+  if (current.primary_assignee_id !== user.actor.user_id) {
+    throw forbidden('Chỉ người thực hiện được giao chính thức mới được gửi kết quả hoàn thành.');
+  }
+  await assertCanWrite(user, current, 'work.submit_completion');
+  assertVersion(current, payload.expected_version);
+  if (current.status === 'COMPLETED' || current.status === 'CANCELLED') {
+    throw validation('Công việc đã kết thúc nên không thể gửi kết quả mới.');
+  }
+  if ((current.completion_approval_status ?? 'NONE') === 'PENDING') {
+    throw validation('Kết quả này đang chờ xác nhận.');
+  }
+
+  const nextStatus = current.status === 'IN_PROGRESS' ? current.status : 'IN_PROGRESS';
+  if (!canTransition(current.status, nextStatus)) {
+    throw businessRule('Cần đưa công việc về trạng thái Đang thực hiện trước khi gửi hoàn thành.');
+  }
+
+  const ctx = await getBocContext();
+  if (payload.completed_at > ctx.today) {
+    throw validation('Ngày hoàn thành thực tế không được nằm trong tương lai.');
+  }
+  const resultLink = payload.result_link ?? current.result_link;
+  await assertCompletionEvidence(current, {
+    progress: 100,
+    completed_at: payload.completed_at,
+    result_link: resultLink,
+  });
+
+  const store = await getStore();
+  const submittedAt = new Date().toISOString();
+  const updated = await store.transaction(async (tx) => {
+    const row = await tx.update<Row & WorkItem>('work_items', current.id, {
+      status: nextStatus,
+      manual_progress: current.is_leaf ? 100 : current.manual_progress,
+      completion_approval_status: 'PENDING',
+      submitted_completed_at: payload.completed_at,
+      submitted_result_link: resultLink,
+      completion_submitted_by: user.actor.user_id,
+      completion_submitted_at: submittedAt,
+      completion_reviewed_by: null,
+      completion_reviewed_at: null,
+      completion_review_note: null,
+      updated_by: user.actor.user_id,
+      version: current.version + 1,
+    });
+    await recalculateAndPersist(tx, [current.root_id], ctx.categoryCodeOf, ctx.rollupMode);
+    await recordAudit({
+      store: tx,
+      actorUserId: user.actor.user_id,
+      action: 'work_item.completion.submit',
+      entityType: 'work_item',
+      entityId: current.id,
+      before: current,
+      after: row,
+      changedFields: ['status', 'manual_progress', 'completion_approval_status', 'submitted_completed_at', 'submitted_result_link'],
+      reason: payload.note,
+    });
+    await recordActivity({
+      store: tx,
+      actorUserId: user.actor.user_id,
+      entityType: 'work_item',
+      entityId: current.id,
+      verb: 'completion_submitted',
+      summary: `${user.profile.full_name} gửi kết quả hoàn thành để xác nhận`,
+    });
+    await enqueueOutbox({
+      store: tx,
+      eventType: 'work_item.completion_submitted',
+      payload: { id: current.id, submitted_by: user.actor.user_id },
+    });
+    return row;
+  });
+
+  await notifyMany([current.lead_user_id, current.created_by], {
+    actorUserId: user.actor.user_id,
+    type: 'COMPLETION_SUBMITTED',
+    title: 'Kết quả đang chờ xác nhận',
+    body: `${current.code} · ${current.title}`,
+    entityType: 'work_item',
+    entityId: current.id,
+    priority: current.priority === 'P1' ? 'HIGH' : 'NORMAL',
+  });
+  invalidate(current.id);
+  return updated;
+}
+
+export interface ReviewCompletionPayload {
+  id: string;
+  expected_version: number;
+  decision: 'APPROVE' | 'REJECT';
+  note: string | null;
+}
+
+function canReviewCompletion(user: SessionUser, item: WorkItem): boolean {
+  if (!hasCapability(user.actor, 'work.approve_completion')) return false;
+  if (item.lead_user_id === user.actor.user_id) return true;
+  const isManager = user.actor.roles.some((role) =>
+    ['unit_manager', 'business_admin', 'boc_director', 'system_admin'].includes(role),
+  );
+  return isManager && (user.scope.all || user.scope.unit_ids.has(item.owning_unit_id));
+}
+
+export async function reviewWorkItemCompletion(
+  user: SessionUser,
+  payload: ReviewCompletionPayload,
+): Promise<WorkItem> {
+  const current = await getWorkItem(payload.id);
+  if (!current) throw notFound('Không tìm thấy công việc.');
+  if (!canReviewCompletion(user, current)) {
+    throw forbidden('Chỉ người phụ trách hoặc quản lý trong phạm vi được xác nhận kết quả.');
+  }
+  if (current.completion_submitted_by === user.actor.user_id) {
+    throw forbidden('Người gửi kết quả không được tự xác nhận kết quả của chính mình.');
+  }
+  assertVersion(current, payload.expected_version);
+  if ((current.completion_approval_status ?? 'NONE') !== 'PENDING') {
+    throw validation('Không có kết quả nào đang chờ xác nhận.');
+  }
+  if (payload.decision === 'REJECT' && !payload.note?.trim()) {
+    throw validation('Trả lại kết quả bắt buộc ghi rõ lý do.');
+  }
+
+  const ctx = await getBocContext();
+  if (payload.decision === 'APPROVE') {
+    await assertCompletionEvidence(current, {
+      progress: 100,
+      completed_at: current.submitted_completed_at,
+      result_link: current.submitted_result_link ?? current.result_link,
+    });
+    if (!canTransition(current.status, 'COMPLETED')) {
+      throw businessRule('Trạng thái hiện tại không thể chuyển sang Hoàn thành.');
+    }
+  }
+
+  const store = await getStore();
+  const reviewedAt = new Date().toISOString();
+  const approved = payload.decision === 'APPROVE';
+  const patch: Partial<WorkItem> = {
+    completion_approval_status: approved ? 'APPROVED' : 'REJECTED',
+    completion_reviewed_by: user.actor.user_id,
+    completion_reviewed_at: reviewedAt,
+    completion_review_note: payload.note,
+    updated_by: user.actor.user_id,
+    version: current.version + 1,
+  };
+  if (approved) {
+    patch.status = 'COMPLETED';
+    patch.completed_at = current.submitted_completed_at;
+    patch.result_link = current.submitted_result_link ?? current.result_link;
+    patch.manual_progress = current.is_leaf ? 100 : current.manual_progress;
+  }
+
+  const updated = await store.transaction(async (tx) => {
+    const row = await tx.update<Row & WorkItem>('work_items', current.id, patch);
+    await recalculateAndPersist(tx, [current.root_id], ctx.categoryCodeOf, ctx.rollupMode);
+    await recordAudit({
+      store: tx,
+      actorUserId: user.actor.user_id,
+      action: approved ? 'work_item.completion.approve' : 'work_item.completion.reject',
+      entityType: 'work_item',
+      entityId: current.id,
+      before: current,
+      after: row,
+      changedFields: approved
+        ? ['status', 'completed_at', 'result_link', 'completion_approval_status']
+        : ['completion_approval_status', 'completion_review_note'],
+      reason: payload.note,
+    });
+    await recordActivity({
+      store: tx,
+      actorUserId: user.actor.user_id,
+      entityType: 'work_item',
+      entityId: current.id,
+      verb: approved ? 'completion_approved' : 'completion_rejected',
+      summary: `${user.profile.full_name} ${approved ? 'xác nhận' : 'trả lại'} kết quả hoàn thành`,
+    });
+    return row;
+  });
+
+  await notifyMany([current.completion_submitted_by, current.primary_assignee_id], {
+    actorUserId: user.actor.user_id,
+    type: approved ? 'COMPLETION_APPROVED' : 'COMPLETION_REJECTED',
+    title: approved ? 'Kết quả đã được xác nhận' : 'Kết quả cần bổ sung',
+    body: `${current.code} · ${current.title}${payload.note ? ` · ${payload.note}` : ''}`,
+    entityType: 'work_item',
+    entityId: current.id,
+    priority: approved ? 'NORMAL' : 'HIGH',
+  });
+  invalidate(current.id);
+  return updated;
+}
+
+// ---------------------------------------------------------------------------
 // Đổi trạng thái có kiểm soát
 // ---------------------------------------------------------------------------
 
@@ -626,12 +863,12 @@ export async function changeWorkItemStatus(
   const current = await getWorkItem(payload.id);
   if (!current) throw notFound('Không tìm thấy công việc.');
 
+  if (payload.status === 'COMPLETED') {
+    throw validation('Hãy dùng luồng “Gửi hoàn thành” và “Xác nhận kết quả”.');
+  }
+
   const capability: Capability =
-    payload.status === 'CANCELLED'
-      ? 'work.cancel'
-      : payload.status === 'COMPLETED'
-        ? 'work.complete'
-        : 'work.change_status';
+    payload.status === 'CANCELLED' ? 'work.cancel' : 'work.change_status';
 
   await assertCanWrite(user, current, capability);
   assertVersion(current, payload.expected_version);
@@ -656,28 +893,28 @@ export async function changeWorkItemStatus(
     throw validation('Hủy công việc bắt buộc ghi lý do.');
   }
 
-  if (payload.status === 'COMPLETED') {
-    await assertCompletionAllowed(user, current, {
-      progress: current.is_leaf ? (current.manual_progress ?? 0) : current.effective_progress,
-      completed_at: payload.completed_at ?? null,
-      result_link: payload.result_link ?? current.result_link,
-    });
-  }
-
   const ctx = await getBocContext();
   const store = await getStore();
 
   const patch: Partial<WorkItem> = {
     status: payload.status,
     cancel_reason: payload.status === 'CANCELLED' ? payload.reason : current.cancel_reason,
-    completed_at:
-      payload.status === 'COMPLETED' ? (payload.completed_at ?? ctx.today) : null,
-    manual_progress:
-      payload.status === 'COMPLETED' && current.is_leaf ? 100 : current.manual_progress,
+    completed_at: null,
+    manual_progress: current.manual_progress,
     result_link: payload.result_link ?? current.result_link,
     updated_by: user.actor.user_id,
     version: current.version + 1,
   };
+  if (current.status === 'COMPLETED' && payload.status === 'IN_PROGRESS') {
+    patch.completion_approval_status = 'NONE';
+    patch.submitted_completed_at = null;
+    patch.submitted_result_link = null;
+    patch.completion_submitted_by = null;
+    patch.completion_submitted_at = null;
+    patch.completion_reviewed_by = null;
+    patch.completion_reviewed_at = null;
+    patch.completion_review_note = null;
+  }
 
   const updated = await store.transaction(async (tx) => {
     const row = await tx.update<Row & WorkItem>('work_items', current.id, patch);
@@ -713,11 +950,7 @@ export async function changeWorkItemStatus(
     actorUserId: user.actor.user_id,
     type: 'STATUS_CHANGED',
     title:
-      payload.status === 'COMPLETED'
-        ? 'Công việc đã hoàn thành'
-        : payload.status === 'CANCELLED'
-          ? 'Công việc đã bị hủy'
-          : 'Công việc đổi trạng thái',
+      payload.status === 'CANCELLED' ? 'Công việc đã bị hủy' : 'Công việc đổi trạng thái',
     body: `${current.code} · ${current.title}`,
     entityType: 'work_item',
     entityId: current.id,
@@ -729,13 +962,10 @@ export async function changeWorkItemStatus(
 }
 
 /** BR-STA-001 — gom mọi điều kiện hoàn thành vào một chỗ. */
-async function assertCompletionAllowed(
-  user: SessionUser,
+async function assertCompletionEvidence(
   item: WorkItem,
   input: { progress: number | null; completed_at: string | null; result_link: string | null },
 ): Promise<void> {
-  if (!hasCapability(user.actor, 'work.complete')) throw forbidden();
-
   const tree = buildTreeIndex(await listTreeFor([item.root_id]));
   const children = (tree.childrenOf.get(item.id) ?? []).filter(
     (c) => !c.is_archived && c.status !== 'CANCELLED',
@@ -810,6 +1040,70 @@ export async function archiveWorkItem(
 
   invalidate(id);
   return updated;
+}
+
+// ---------------------------------------------------------------------------
+// Xóa an toàn (soft delete) cả nhánh — chỉ cấp quản lý
+// ---------------------------------------------------------------------------
+
+export async function deleteWorkItemBranch(
+  user: SessionUser,
+  id: string,
+  expectedVersion: number,
+  reason: string,
+): Promise<{ deletedCount: number }> {
+  const current = await getWorkItem(id);
+  if (!current) throw notFound('Không tìm thấy công việc.');
+  await assertCanWrite(user, current, 'work.delete');
+  assertVersion(current, expectedVersion);
+  if (!reason.trim()) throw validation('Xóa công việc bắt buộc ghi lý do.');
+
+  const tree = buildTreeIndex(await listTreeFor([current.root_id]));
+  const branch = [current, ...descendantsOf(tree, current.id)].filter(
+    (item) => !item.is_deleted,
+  );
+  const timestamp = new Date().toISOString();
+  const ctx = await getBocContext();
+  const store = await getStore();
+
+  await store.transaction(async (tx) => {
+    await tx.updateMany(
+      'work_items',
+      branch.map((item) => ({
+        id: item.id,
+        patch: {
+          is_archived: true,
+          archived_at: timestamp,
+          is_deleted: true,
+          deleted_at: timestamp,
+          deleted_by: user.actor.user_id,
+          delete_reason: reason.trim(),
+          updated_by: user.actor.user_id,
+          version: item.version + 1,
+        },
+      })),
+    );
+    await recalculateAndPersist(tx, [current.root_id], ctx.categoryCodeOf, ctx.rollupMode);
+    await recordAudit({
+      store: tx,
+      actorUserId: user.actor.user_id,
+      action: 'work_item.delete_branch',
+      entityType: 'work_item',
+      entityId: current.id,
+      before: current,
+      after: { root_id: current.id, deleted_count: branch.length, soft_delete: true },
+      changedFields: ['is_deleted', 'is_archived', 'deleted_at', 'deleted_by', 'delete_reason'],
+      reason,
+    });
+    await enqueueOutbox({
+      store: tx,
+      eventType: 'work_item.deleted',
+      payload: { id: current.id, deleted_count: branch.length },
+    });
+  });
+
+  invalidate(current.id);
+  return { deletedCount: branch.length };
 }
 
 // ---------------------------------------------------------------------------

@@ -42,6 +42,9 @@ export type ManagementLevelCode = 'COMPANY' | 'DEPARTMENT';
 
 export type DataQualityStatus = 'VALID' | 'INCOMPLETE' | 'INVALID';
 
+/** Luồng hoàn thành: người thực hiện gửi, người phụ trách/quản lý xác nhận. */
+export type CompletionApprovalStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+
 /** Trạng thái một kỳ/lần thực hiện (guideline 7.10). */
 export type ExecutionStatus = 'NOT_DONE' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
 
@@ -198,8 +201,20 @@ export interface WorkItem {
   allocation_hours: number | null;
   completed_at: BusinessDate | null;
   result_link: string | null;
+  completion_approval_status: CompletionApprovalStatus;
+  submitted_completed_at: BusinessDate | null;
+  submitted_result_link: string | null;
+  completion_submitted_by: string | null;
+  completion_submitted_at: Instant | null;
+  completion_reviewed_by: string | null;
+  completion_reviewed_at: Instant | null;
+  completion_review_note: string | null;
   is_archived: boolean;
   archived_at: Instant | null;
+  is_deleted: boolean;
+  deleted_at: Instant | null;
+  deleted_by: string | null;
+  delete_reason: string | null;
   cancel_reason: string | null;
   created_by: string;
   updated_by: string;
@@ -288,6 +303,9 @@ export type NotificationType =
   | 'CHILD_OUTSIDE_PARENT'
   | 'MISSING_DATA'
   | 'STATUS_CHANGED'
+  | 'COMPLETION_SUBMITTED'
+  | 'COMPLETION_APPROVED'
+  | 'COMPLETION_REJECTED'
   | 'IMPORT_DONE'
   | 'EXPORT_DONE';
 

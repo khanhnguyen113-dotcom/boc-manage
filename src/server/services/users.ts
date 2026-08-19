@@ -2,7 +2,7 @@ import 'server-only';
 
 import { randomUUID } from 'node:crypto';
 import { cache } from 'react';
-import { Client, Users } from 'node-appwrite';
+import { Account, Client, Users } from 'node-appwrite';
 
 import { env } from '@/config/env';
 import { effectiveCapabilities, hasCapability, resolveScope, type Actor } from '@/domain/permissions';
@@ -18,7 +18,7 @@ import type { CreateUserInput, UpdateUserInput } from '@/schemas/user';
 
 import { installAppwriteDnsOverride } from '../appwrite/dns-override';
 import type { SessionUser } from '../auth/current-user';
-import { hashPassword } from '../auth/session';
+import { hashPassword, readSession, verifyPassword } from '../auth/session';
 import { getStore, type Row } from '../db/store';
 import type { TableName } from '../db/schema';
 import { listUnits } from '../repositories/catalogs';
@@ -436,6 +436,56 @@ export async function changeUserPassword(
     changedFields: ['password', 'sessions'],
   });
   return { sessionsRevoked };
+}
+
+/** Người dùng tự đổi mật khẩu: luôn xác minh mật khẩu hiện tại ở Auth/local trước khi ghi. */
+export async function changeOwnPassword(
+  actor: SessionUser,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const store = await getStore();
+  const profiles = await store.all<Row & Profile>('profiles', {
+    filters: [{ field: 'user_id', op: 'eq', value: actor.actor.user_id }],
+    limit: 1,
+  });
+  const profile = profiles[0] as (Row & Profile & { password_hash?: string }) | undefined;
+  if (!profile) throw notFound('Không tìm thấy hồ sơ tài khoản.');
+
+  if (env().DATA_DRIVER === 'appwrite') {
+    const session = await readSession();
+    if (!session?.aws) throw forbidden('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.');
+    installAppwriteDnsOverride();
+    const account = new Account(
+      new Client()
+        .setEndpoint(env().APPWRITE_ENDPOINT!)
+        .setProject(env().APPWRITE_PROJECT_ID!)
+        .setSession(session.aws),
+    );
+    try {
+      await account.updatePassword({ password: newPassword, oldPassword: currentPassword });
+    } catch (error) {
+      const code = (error as { code?: number }).code;
+      if (code === 400 || code === 401) {
+        throw validation('Mật khẩu hiện tại không đúng hoặc mật khẩu mới không được Appwrite chấp nhận.');
+      }
+      throw error;
+    }
+  } else {
+    if (!verifyPassword(currentPassword, profile.password_hash)) {
+      throw validation('Mật khẩu hiện tại không đúng.');
+    }
+    await store.update('profiles', profile.id, { password_hash: hashPassword(newPassword) } as never);
+  }
+
+  await recordAudit({
+    actorUserId: actor.actor.user_id,
+    action: 'user.password.self_change',
+    entityType: 'user',
+    entityId: actor.actor.user_id,
+    after: { password: '[redacted]' },
+    changedFields: ['password'],
+  });
 }
 
 const USER_REFERENCE_CHECKS: {

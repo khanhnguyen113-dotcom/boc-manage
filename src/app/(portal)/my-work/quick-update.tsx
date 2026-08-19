@@ -1,9 +1,9 @@
 ﻿'use client';
 
 import { useActionState, useState } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown } from 'lucide-react';
 
-import { quickUpdateAction } from '@/app/(portal)/work-items/actions';
+import { quickUpdateAction, submitCompletionAction } from '@/app/(portal)/work-items/actions';
 import { EMPTY_FORM_STATE } from '@/app/(portal)/work-items/form-state';
 import { Field, FormError, Input, Select, SubmitButton, Textarea } from '@/components/ui/form';
 import { Badge } from '@/components/ui/primitives';
@@ -18,12 +18,16 @@ import { cn } from '@/lib/cn';
  * Form mở ngay trong danh sách, không phải mở trang chi tiết. Chỉ chứa các trường mà người thực
  * hiện được phép đổi; mọi rule (leaf-only, transition, evidence) vẫn kiểm ở server.
  */
-export function QuickUpdate({ item, today }: { item: WorkItem; today: string }) {
+export function QuickUpdate({ item, today, canSubmitCompletion }: { item: WorkItem; today: string; canSubmitCompletion: boolean }) {
   const [open, setOpen] = useState(false);
+  const [completionOpen, setCompletionOpen] = useState(false);
   const [state, formAction] = useActionState(quickUpdateAction, EMPTY_FORM_STATE);
+  const [completionState, completionAction] = useActionState(submitCompletionAction, EMPTY_FORM_STATE);
   const [status, setStatus] = useState(item.status);
 
   const nextStatuses = [item.status, ...allowedNextStatuses(item.status)].filter(
+    (value) => value !== 'COMPLETED',
+  ).filter(
     (value, index, all) => all.indexOf(value) === index,
   );
 
@@ -37,15 +41,30 @@ export function QuickUpdate({ item, today }: { item: WorkItem; today: string }) 
 
   return (
     <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="inline-flex items-center gap-1 rounded-[var(--radius)] border border-[var(--border-strong)] px-2.5 py-1.5 text-xs font-medium hover:bg-[var(--surface-hover)]"
-      >
-        Cập nhật
-        <ChevronDown aria-hidden className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1 rounded-[var(--radius)] border border-[var(--border-strong)] px-2.5 py-1.5 text-xs font-medium hover:bg-[var(--surface-hover)]"
+        >
+          Cập nhật
+          <ChevronDown aria-hidden className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
+        </button>
+        {item.completion_approval_status === 'PENDING' ? (
+          <Badge tone="warning">Đang chờ duyệt kết quả</Badge>
+        ) : canSubmitCompletion ? (
+          <button
+            type="button"
+            onClick={() => setCompletionOpen((value) => !value)}
+            aria-expanded={completionOpen}
+            className="inline-flex items-center gap-1 rounded-[var(--radius)] bg-[var(--brand-600)] px-2.5 py-1.5 text-xs font-medium text-white hover:bg-[var(--brand-700)]"
+          >
+            <CheckCircle2 aria-hidden className="size-3.5" />
+            Gửi hoàn thành
+          </button>
+        ) : null}
+      </div>
 
       {open ? (
         <form
@@ -87,38 +106,6 @@ export function QuickUpdate({ item, today }: { item: WorkItem; today: string }) 
             </Field>
           </div>
 
-          {status === 'COMPLETED' ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field
-                label="Ngày hoàn thành thực tế"
-                htmlFor={`completed-${item.id}`}
-                required
-                hint="Bắt buộc khi chuyển sang Hoàn thành."
-              >
-                <Input
-                  id={`completed-${item.id}`}
-                  name="completed_at"
-                  type="date"
-                  defaultValue={today}
-                />
-              </Field>
-              <Field
-                label="Link kết quả"
-                htmlFor={`link-${item.id}`}
-                required
-                hint="Cần link hoặc tệp kết quả làm bằng chứng."
-              >
-                <Input
-                  id={`link-${item.id}`}
-                  name="result_link"
-                  type="url"
-                  defaultValue={item.result_link ?? ''}
-                  placeholder="https://…"
-                />
-              </Field>
-            </div>
-          ) : null}
-
           <Field
             label="Ghi chú / khó khăn"
             htmlFor={`note-${item.id}`}
@@ -139,6 +126,33 @@ export function QuickUpdate({ item, today }: { item: WorkItem; today: string }) 
             >
               Đóng
             </button>
+          </div>
+        </form>
+      ) : null}
+
+      {completionOpen && canSubmitCompletion && item.completion_approval_status !== 'PENDING' ? (
+        <form action={completionAction} className="animate-in mt-3 space-y-3 rounded-[var(--radius)] border border-[var(--brand-300)] bg-[var(--surface-sunken)] p-3">
+          <input type="hidden" name="id" value={item.id} />
+          <input type="hidden" name="expected_version" value={item.version} />
+          <FormError message={completionState.error} details={completionState.details} />
+          {completionState.success ? <Badge tone="success">{completionState.success}</Badge> : null}
+          {item.completion_approval_status === 'REJECTED' && item.completion_review_note ? (
+            <Badge tone="danger">Cần bổ sung: {item.completion_review_note}</Badge>
+          ) : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Ngày hoàn thành thực tế" htmlFor={`submit-completed-${item.id}`} required>
+              <Input id={`submit-completed-${item.id}`} name="completed_at" type="date" max={today} defaultValue={item.submitted_completed_at ?? today} required />
+            </Field>
+            <Field label="Link kết quả" htmlFor={`submit-link-${item.id}`} hint="Cần link hoặc tệp kết quả đã tải lên.">
+              <Input id={`submit-link-${item.id}`} name="result_link" type="url" defaultValue={item.submitted_result_link ?? item.result_link ?? ''} placeholder="https://…" />
+            </Field>
+          </div>
+          <Field label="Ghi chú bàn giao" htmlFor={`submit-note-${item.id}`}>
+            <Textarea id={`submit-note-${item.id}`} name="note" rows={2} />
+          </Field>
+          <div className="flex items-center gap-2">
+            <SubmitButton pendingLabel="Đang gửi…">Gửi người phụ trách xác nhận</SubmitButton>
+            <button type="button" onClick={() => setCompletionOpen(false)} className="text-xs text-[var(--text-muted)] hover:underline">Đóng</button>
           </div>
         </form>
       ) : null}

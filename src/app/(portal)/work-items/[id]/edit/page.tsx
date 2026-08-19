@@ -14,6 +14,7 @@ import { getWorkItem, listAssignments, listWorkItemsInScope } from '@/server/rep
 import { getBocContext } from '@/server/services/context';
 
 import { WorkItemForm } from '../../work-item-form';
+import { DeleteWorkItemPanel } from './delete-work-item-panel';
 
 export const metadata: Metadata = { title: 'Chỉnh sửa công việc' };
 
@@ -81,6 +82,10 @@ export default async function EditWorkItemPage({ params }: { params: Promise<{ i
         parents={parents}
         defaultYear={Number(ctx.today.slice(0, 4))}
       />
+
+      {user.capabilities.has('work.delete') ? (
+        <DeleteWorkItemPanel id={item.id} version={item.version} />
+      ) : null}
     </div>
   );
 }
