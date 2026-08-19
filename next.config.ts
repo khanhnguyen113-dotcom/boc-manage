@@ -9,26 +9,6 @@ import type { NextConfig } from 'next';
  */
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-/** Chỉ đưa origin HTTP(S) hợp lệ từ cấu hình vào CSP. */
-function htmlAppFrameSources(value: string | undefined): string[] {
-  if (!value) return [];
-
-  const origins = new Set<string>();
-  for (const candidate of value.split(',')) {
-    try {
-      const url = new URL(candidate.trim());
-      if ((url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password) {
-        origins.add(url.origin);
-      }
-    } catch {
-      // Bỏ qua cấu hình sai, không ghép chuỗi chưa kiểm soát vào security header.
-    }
-  }
-  return [...origins];
-}
-
-const HTML_APP_FRAME_SOURCES = htmlAppFrameSources(process.env.HTML_APP_ALLOWED_ORIGINS);
-
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   // React dev mode cần `eval()` để dựng lại callstack khi báo lỗi; production thì không.
@@ -37,8 +17,6 @@ const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "connect-src 'self'",
-  // `blob:` hỗ trợ viewer tạo object URL; origin ngoài phải khai báo rõ trên Dokploy.
-  `frame-src 'self' blob:${HTML_APP_FRAME_SOURCES.length ? ` ${HTML_APP_FRAME_SOURCES.join(' ')}` : ''}`,
   "form-action 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
